@@ -1,7 +1,24 @@
 # PDB-Social-Network
 
+# Project structure
+.
+├── app/
+│   ├── controllers/ (contains the controllers for the command and query side)
+│   │   ├── command_controller.py
+│   │   └── query_controller.py
+│   ├── message_broker/ (contains the event handler for the message broker)
+│   │   └── event_handler.py
+│   ├── models/ (contains the models for the command and query side)
+│   │   ├── controller_model.py
+│   │   └── query_model.py
+│   └── utils/ (contains the utils for the command, query and message broker)
+│       ├── controller.py
+│       ├── pika.py
+│       └── query.py
+└── tests (contains tests)
+
 # Prerequisites
-Python >= 3.10 
+Python >= 3.10
 Docker Desktop >= 4.21.1
 
 # Package installation
@@ -21,3 +38,6 @@ Option 2:
   - `poetry run litestar --app app.controllers.command_controller:app run --port 8000`
   - `poetry run litestar --app app.controllers.query_controller:app run --port 8001`
   - `poetry run python app/message_broker/event_handler.py`
+
+# Pre-commit hooks
+Before you commit, you need to run pre-commit to ensure that your code is formatted correctly and that you have no linting errors. To do this, run `pre-commit` in the root directory of the project. If you have any errors, you will need to fix them before you can commit.

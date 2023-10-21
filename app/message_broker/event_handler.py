@@ -1,12 +1,16 @@
-import pika
-import sys
 import os
+import sys
+
+import pika
+
 # TODO: Fix imports
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from utils.pika import handle_queues, declare_queues, credentials
+from utils.pika import credentials, declare_queues, handle_queues
 
 # Establish a connection to RabbitMQ server
-connection = pika.BlockingConnection(pika.ConnectionParameters('localhost', credentials=credentials))
+connection = pika.BlockingConnection(
+    pika.ConnectionParameters('localhost', credentials=credentials)
+)
 channel = connection.channel()
 
 # Declare the queues
