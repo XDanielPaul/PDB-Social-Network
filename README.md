@@ -21,6 +21,7 @@
 
 # Prerequisites
 Python >= 3.10
+
 Docker Desktop >= 4.21.1
 
 # Package installation
