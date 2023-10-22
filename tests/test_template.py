@@ -7,7 +7,6 @@ from litestar.testing import TestClient
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from app.controllers.command_controller import app as command_app
 from app.controllers.query_controller import app as query_app
-from app.utils.pika import RabbitMQConnection
 
 def test_command_hello() -> None:
     with TestClient(app=command_app) as client:
