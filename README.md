@@ -1,6 +1,7 @@
 # PDB-Social-Network
 
 # Project structure
+```
 .
 ├── app/
 │   ├── controllers/ (contains the controllers for the command and query side)
@@ -16,9 +17,11 @@
 │       ├── pika.py
 │       └── query.py
 └── tests (contains tests)
+```
 
 # Prerequisites
 Python >= 3.10
+
 Docker Desktop >= 4.21.1
 
 # Package installation
