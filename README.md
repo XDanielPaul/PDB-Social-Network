@@ -1,4 +1,11 @@
 # PDB-Social-Network
+<img src="https://github.com/XDanielPaul/PDB-Social-Network/assets/47739921/2f7b46f7-bded-4b76-b6a1-7dfdb683b304" alt="PDBlogo" width="400px" height="400px">
+
+This is an implementation of a project made for Advanced Database Systems course. It is a Social Network, where you can read, create, share, rate posts, follow users and comment to share your ideas.
+
+Authors:
+- Daniel Paul (xpauld00@stud.fit.vutbr.cz)
+- Tomáš Křivánek (xkriva29@stud.fit.vutbr.cz)
 
 # Project structure
 ```
