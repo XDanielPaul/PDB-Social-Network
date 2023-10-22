@@ -7,7 +7,7 @@ import pika
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from litestar import Litestar, get
 
-from ..utils.pika import credentials, declare_queues, publish_message
+from ..utils.pika import publish_message, pika_connect
 
 
 @get("/")
@@ -18,9 +18,6 @@ async def hello_world() -> str:
 
 
 app = Litestar([hello_world])
-connection = pika.BlockingConnection(
-    pika.ConnectionParameters('localhost', credentials=credentials)
-)
-channel = connection.channel()
+pika_channel = connect()
 
-declare_queues(channel)
+

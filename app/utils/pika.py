@@ -2,6 +2,16 @@ import pika
 
 credentials = pika.PlainCredentials('admin', 'admin')
 
+def pika_connect(reciever: bool = False) -> pika.BlockingChannel:
+    connection = pika.BlockingConnection(
+    pika.ConnectionParameters('localhost', credentials=credentials)
+    )
+    channel = connection.channel()
+    declare_queues(channel)
+    if reciever:
+        handle_queues(channel)
+    return channel
+    
 
 def declare_queues(channel):
     for queue in queues_with_callbacks.keys():
