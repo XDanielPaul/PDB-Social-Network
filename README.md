@@ -41,3 +41,15 @@ Option 2:
 
 # Pre-commit hooks
 Before you commit, you need to run pre-commit to ensure that your code is formatted correctly and that you have no linting errors. To do this, run `pre-commit` in the root directory of the project. If you have any errors, you will need to fix them before you can commit.
+
+# Testing
+For testing you have to have dependencies installed.
+
+You can run tests in 2 ways:
+1. Run tests in VSCode (this way you can also debug tests)
+   1. Select poetry shell python interpreter in VSCode
+      1. `CTRL + SHIFT + P`
+      2. `Python: Select Interpreter`
+      3. `pdb-social-network-...`,  `Poetry`
+   2. You can click on the **run and debug** icon in VSCode and run test discovery
+2. Run tests in the terminal with `poetry run pytest`
