@@ -7,12 +7,16 @@ class PikaException(Exception):
         super().__init__(message)
 
 class RabbitMQConnection:
+    
+    
 
     credentials: pika.PlainCredentials = pika.PlainCredentials('admin', 'admin')
-
-    def __enter__(self, reciever: bool = False) -> BlockingChannel:
-        # Establish RabbitMQ connection and channel
+    
+    def __init__(self, reciever: bool = False):
         self.reciever = reciever
+
+    def __enter__(self) -> BlockingChannel:
+        # Establish RabbitMQ connection and channel
         try:
             self.connection = pika.BlockingConnection(pika.ConnectionParameters('localhost', credentials=self.credentials))
             self.channel = self.connection.channel()
