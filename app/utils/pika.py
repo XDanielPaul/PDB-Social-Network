@@ -1,24 +1,26 @@
 from typing import Callable
+
 import pika
 from pika.adapters.blocking_connection import BlockingChannel
+
 
 class PikaException(Exception):
     def __init__(self, message):
         super().__init__(message)
 
-class RabbitMQConnection:
-    
-    
 
+class RabbitMQConnection:
     credentials: pika.PlainCredentials = pika.PlainCredentials('admin', 'admin')
-    
+
     def __init__(self, reciever: bool = False):
         self.reciever = reciever
 
     def __enter__(self) -> BlockingChannel:
         # Establish RabbitMQ connection and channel
         try:
-            self.connection = pika.BlockingConnection(pika.ConnectionParameters('localhost', credentials=self.credentials))
+            self.connection = pika.BlockingConnection(
+                pika.ConnectionParameters('localhost', credentials=self.credentials)
+            )
             self.channel = self.connection.channel()
         except:
             raise PikaException("Cannot connect to RabbitMQ.")
@@ -26,7 +28,7 @@ class RabbitMQConnection:
         if self.reciever:
             self.handle_queues()
         return self
-    
+
     def __exit__(self, exc_type, exc_value, traceback):
         # Close RabbitMQ connection after publishing
         self.connection.close()
@@ -45,6 +47,7 @@ class RabbitMQConnection:
         else:
             raise PikaException("Cannot publish message from reciever connection.")
 
+
 # ---------------------------------------------------------
 # Callbacks
 # ---------------------------------------------------------
@@ -55,6 +58,4 @@ def hello_callback(ch, method, properties, body) -> None:
 # ---------------------------------------------------------
 # Queues
 # ---------------------------------------------------------
-queues_with_callbacks: dict[str,Callable[..., None]] = {
-    'hello': hello_callback
-}
+queues_with_callbacks: dict[str, Callable[..., None]] = {'hello': hello_callback}
