@@ -2,32 +2,44 @@ from typing import Callable
 import pika
 from pika.adapters.blocking_connection import BlockingChannel
 
-credentials: pika.PlainCredentials = pika.PlainCredentials('admin', 'admin')
+class PikaException(Exception):
+    def __init__(self, message):
+        super().__init__(message)
 
+class RabbitMQConnection:
 
-def pika_connect(reciever: bool = False) -> BlockingChannel:
-    connection = pika.BlockingConnection(
-        pika.ConnectionParameters('localhost', credentials=credentials)
-    )
-    channel = connection.channel()
-    declare_queues(channel)
-    if reciever:
-        handle_queues(channel)
-    return channel
+    credentials: pika.PlainCredentials = pika.PlainCredentials('admin', 'admin')
 
+    def __enter__(self, reciever: bool = False) -> BlockingChannel:
+        # Establish RabbitMQ connection and channel
+        self.reciever = reciever
+        try:
+            self.connection = pika.BlockingConnection(pika.ConnectionParameters('localhost', credentials=self.credentials))
+            self.channel = self.connection.channel()
+        except:
+            raise PikaException("Cannot connect to RabbitMQ.")
+        self.declare_queues()
+        if self.reciever:
+            self.handle_queues()
+        return self
+    
+    def __exit__(self, exc_type, exc_value, traceback):
+        # Close RabbitMQ connection after publishing
+        self.connection.close()
 
-def declare_queues(channel) -> None:
-    for queue in queues_with_callbacks.keys():
-        channel.queue_declare(queue=queue)
+    def handle_queues(self) -> None:
+        for queue, callback in queues_with_callbacks.items():
+            self.channel.basic_consume(queue=queue, on_message_callback=callback, auto_ack=True)
 
+    def declare_queues(self) -> None:
+        for queue in queues_with_callbacks.keys():
+            self.channel.queue_declare(queue=queue)
 
-def publish_message(channel, queue, message) -> None:
-    channel.basic_publish(exchange='', routing_key=queue, body=message)
-
-def handle_queues(channel) -> None:
-    for queue, callback in queues_with_callbacks.items():
-        channel.basic_consume(queue=queue, on_message_callback=callback, auto_ack=True)
-
+    def publish_message(self, queue, message) -> None:
+        if not self.reciever:
+            self.channel.basic_publish(exchange='', routing_key=queue, body=message)
+        else:
+            raise PikaException("Cannot publish message from reciever connection.")
 
 # ---------------------------------------------------------
 # Callbacks
