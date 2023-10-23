@@ -63,3 +63,9 @@ You can run tests in 2 ways:
       3. `pdb-social-network-...`,  `Poetry`
    2. You can click on the **run and debug** icon (`CTRL+SHIFT+D`) in VSCode and run test discovery
 2. Run tests in the terminal with `poetry run pytest`
+
+# Debugging API
+You can debug the API on routes:
+-  `/schema` (for [ReDoc](https://redocly.com/redoc))
+-  `/schema/swagger` (for [Swagger UI](https://swagger.io/))
+-  `/schema/elements` (for [Stoplight Elements](https://stoplight.io/open-source/elements/))
