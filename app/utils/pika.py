@@ -1,3 +1,4 @@
+import json
 from typing import Callable
 
 import pika
@@ -43,7 +44,7 @@ class RabbitMQConnection:
 
     def publish_message(self, queue, message) -> None:
         if not self.reciever:
-            self.channel.basic_publish(exchange='', routing_key=queue, body=message)
+            self.channel.basic_publish(exchange='', routing_key=queue, body=json.dumps(message))
         else:
             raise PikaException("Cannot publish message from reciever connection.")
 
@@ -52,7 +53,7 @@ class RabbitMQConnection:
 # Callbacks
 # ---------------------------------------------------------
 def hello_callback(ch, method, properties, body) -> None:
-    print(f" [x] Received {body}")
+    print(f" [x] Received {json.loads(body)}")
 
 
 # ---------------------------------------------------------
