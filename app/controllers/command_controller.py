@@ -76,9 +76,12 @@ class UserController(Controller):
         return deleted_user
 
 
+# PostgreSQL connection string: postgresql+asyncpg://admin:admin@localhost:5432/db_name
+# SQLite connection string: sqlite+aiosqlite:///test.sqlite
 session_config = AsyncSessionConfig(expire_on_commit=False)
 sqlalchemy_config = SQLAlchemyAsyncConfig(
-    connection_string="sqlite+aiosqlite:///test.sqlite", session_config=session_config
+    connection_string="postgresql+asyncpg://admin:admin@localhost:5432/db_name",
+    session_config=session_config,
 )  # Create 'async_session' dependency.
 sqlalchemy_plugin = SQLAlchemyInitPlugin(config=sqlalchemy_config)
 
