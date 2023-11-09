@@ -29,6 +29,10 @@ class UserModel(UUIDBase):
             'password': user_instance.password,
         }
 
+    def __repr__(self):
+        # Do not print password?
+        return f"<UserModel: id='{self.id}', username='{self.username}' >"
+
 
 class UserRepository(SQLAlchemyAsyncRepository[UserModel]):
     """User repository"""

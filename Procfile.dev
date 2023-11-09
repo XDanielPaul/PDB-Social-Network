@@ -1,3 +1,3 @@
-command: poetry run litestar --app app.controllers.command_controller:app run --port 8000
-query: poetry run litestar --app app.controllers.query_controller:app run --port 8001
+command: poetry run litestar --app app.controllers.command_controller:app run --reload --port 8000
+query: poetry run litestar --app app.controllers.query_controller:app run --reload --port 8001
 rabbitmq: poetry run python app/message_broker/event_handler.py
