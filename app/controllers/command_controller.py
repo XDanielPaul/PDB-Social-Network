@@ -5,9 +5,12 @@ from litestar.contrib.sqlalchemy.plugins.init.config import (
     AsyncSessionConfig,
     SQLAlchemyAsyncConfig,
 )
-
 from app.utils.pika import RabbitMQConnection
+
+
 from app.controllers.command.UserController import UserController
+
+
 
 @get("/")
 async def hello_world() -> str:
@@ -34,7 +37,7 @@ async def on_startup() -> None:
 
 
 app = Litestar(
-    route_handlers=[hello_world, UserController],
     on_startup=[on_startup],
     plugins=[SQLAlchemyInitPlugin(config=sqlalchemy_config)],
+    route_handlers=[hello_world, UserController],
 )
