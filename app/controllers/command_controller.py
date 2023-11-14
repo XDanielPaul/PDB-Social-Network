@@ -38,6 +38,7 @@ sqlalchemy_plugin = SQLAlchemyInitPlugin(config=sqlalchemy_config)
 async def on_startup() -> None:
     """Initializes the database."""
     async with sqlalchemy_config.get_engine().begin() as conn:
+        # await conn.run_sync(UUIDBase.metadata.drop_all) # <---- Uncomment this if you need to reset database
         await conn.run_sync(UUIDBase.metadata.create_all)
 
 app = Litestar(
