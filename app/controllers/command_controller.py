@@ -1,5 +1,11 @@
 from litestar import Litestar, get
-from litestar.contrib.sqlalchemy.base import UUIDBase
+from litestar.contrib.sqlalchemy.base import UUIDBase, UUIDAuditBase
+from app.models.user_model import UserModel
+from app.models.post_model import Post
+from app.models.comment_model import Comment
+from app.models.like_dislike_model import LikeDislike
+from app.models.tag_model import Tag
+from app.models.event_model import Event
 from litestar.contrib.sqlalchemy.plugins.init import SQLAlchemyInitPlugin
 from litestar.contrib.sqlalchemy.plugins.init.config import (
     AsyncSessionConfig,
@@ -9,7 +15,6 @@ from app.utils.pika import RabbitMQConnection
 
 
 from app.controllers.command.UserController import UserController
-
 
 
 @get("/")
@@ -34,7 +39,6 @@ async def on_startup() -> None:
     """Initializes the database."""
     async with sqlalchemy_config.get_engine().begin() as conn:
         await conn.run_sync(UUIDBase.metadata.create_all)
-
 
 app = Litestar(
     on_startup=[on_startup],

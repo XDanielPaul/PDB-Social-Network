@@ -1,31 +1,29 @@
-import os
-import sys
-from datetime import date
+
 from typing import Annotated
 
 from litestar.contrib.sqlalchemy.base import UUIDAuditBase, UUIDBase
 from litestar.contrib.sqlalchemy.dto import SQLAlchemyDTO
 from litestar.contrib.sqlalchemy.repository import SQLAlchemyAsyncRepository
-from litestar.dto import DTOConfig, Mark, dto_field
-from sqlalchemy import ForeignKey, select, Table, Column
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Mapped, mapped_column, relationship, selectinload
+from litestar.dto import DTOConfig
+from sqlalchemy import ForeignKey, Table, Column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.utils.controller import Service
+from .post_model import posts_shared_association
+from .event_model import event_attending_associations
 
 user_followers_association = Table(
     'user_followers', UUIDBase.metadata,
-    Column('follower_id',ForeignKey('users.id'),primary_key=True),
-    Column('followed_id',ForeignKey('users.id'),primary_key=True),
+    Column('follower_id', ForeignKey('users.id'), primary_key=True),
+    Column('followed_id', ForeignKey('users.id'), primary_key=True),
 )
 
-# UUIDBase includes UUID based primary key (id)
+
 class UserModel(UUIDBase):
     __tablename__ = 'users'
     username: Mapped[str]
     password: Mapped[str]
     profile_picture: Mapped[str]
     profile_bio: Mapped[str]
-
 
     followers = relationship(
         'UserModel',
@@ -41,6 +39,15 @@ class UserModel(UUIDBase):
         secondaryjoin="UserModel.id == user_followers.c.followed_id",
         back_populates='followers'
     )
+    posts = relationship("Post", back_populates="created_by")
+
+    shared_posts = relationship(
+        'Post', secondary=posts_shared_association, back_populates='shared_by_users')
+    comments = relationship('Comment', back_populates="created_comment_by")
+    likes_dislikes = relationship('LikeDislike', back_populates="reviewed_by")
+    created_events = relationship('Event', back_populates='created_event')
+    attending_events = relationship(
+        'Event', secondary=event_attending_associations, back_populates='attending_users')
 
     def to_dict(user_instance, method):
         return {
