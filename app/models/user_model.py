@@ -30,10 +30,16 @@ class UserModel(UUIDBase):
     followers = relationship(
         'UserModel',
         secondary=user_followers_association,
-        primaryjoin="UserModel.id == user_followers.c.follower_id",
-        secondaryjoin="UserModel.id == user_followers.c.followed_id",
+        primaryjoin="UserModel.id == user_followers.c.followed_id",
+        secondaryjoin="UserModel.id == user_followers.c.follower_id",
         backref="followed_by",
         lazy="dynamic"
+    )
+    following = relationship(
+        'UserModel',
+        secondary=user_followers_association,
+        primaryjoin="UserModel.id == user_followers.c.follower_id",
+        secondaryjoin="UserModel.id == user_followers.c.followed_id",
     )
 
     def to_dict(user_instance, method):
