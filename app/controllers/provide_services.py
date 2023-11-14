@@ -1,7 +1,7 @@
 
 from app.utils.controller import Service
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.command_model import UserRepository
+from app.models.user_model import UserRepository
 
 
 

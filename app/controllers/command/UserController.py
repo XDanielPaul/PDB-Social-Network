@@ -4,7 +4,7 @@ from litestar.controller import Controller
 from litestar.di import Provide
 from litestar.status_codes import HTTP_200_OK
 from app.controllers.provide_services import provides_user_service
-from app.models.command_model import ReadDTO, UserModel, WriteDTO
+from app.models.user_model import ReadDTO, UserModel, WriteDTO
 from app.utils.controller import Service
 from app.utils.pika import RabbitMQConnection
 
