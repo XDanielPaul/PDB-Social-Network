@@ -11,7 +11,8 @@ class PikaException(Exception):
 
 
 class RabbitMQConnection:
-    credentials: pika.PlainCredentials = pika.PlainCredentials('admin', 'admin')
+    credentials: pika.PlainCredentials = pika.PlainCredentials(
+        'admin', 'admin')
 
     def __init__(self, reciever: bool = False):
         self.reciever = reciever
@@ -20,7 +21,8 @@ class RabbitMQConnection:
         # Establish RabbitMQ connection and channel
         try:
             self.connection = pika.BlockingConnection(
-                pika.ConnectionParameters('localhost', credentials=self.credentials)
+                pika.ConnectionParameters(
+                    'localhost', credentials=self.credentials)
             )
             self.channel = self.connection.channel()
         except:
@@ -36,7 +38,8 @@ class RabbitMQConnection:
 
     def handle_queues(self) -> None:
         for queue, callback in queues_with_callbacks.items():
-            self.channel.basic_consume(queue=queue, on_message_callback=callback, auto_ack=True)
+            self.channel.basic_consume(
+                queue=queue, on_message_callback=callback, auto_ack=True)
 
     def declare_queues(self) -> None:
         for queue in queues_with_callbacks.keys():
@@ -44,9 +47,11 @@ class RabbitMQConnection:
 
     def publish_message(self, queue, message) -> None:
         if not self.reciever:
-            self.channel.basic_publish(exchange='', routing_key=queue, body=json.dumps(message))
+            self.channel.basic_publish(
+                exchange='', routing_key=queue, body=json.dumps(message))
         else:
-            raise PikaException("Cannot publish message from reciever connection.")
+            raise PikaException(
+                "Cannot publish message from reciever connection.")
 
 
 # ---------------------------------------------------------
@@ -56,7 +61,12 @@ def hello_callback(ch, method, properties, body) -> None:
     print(f" [x] Received {json.loads(body)}")
 
 
+def info_callback(ch, method, properties, body) -> None:
+    print(f" [x] Received: {body.decode('utf-8')}")
+
+
 # ---------------------------------------------------------
 # Queues
 # ---------------------------------------------------------
-queues_with_callbacks: dict[str, Callable[..., None]] = {'hello': hello_callback}
+queues_with_callbacks: dict[str, Callable[..., None]] = {
+    'hello': hello_callback, 'info': info_callback}

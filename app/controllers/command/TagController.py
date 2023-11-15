@@ -12,6 +12,7 @@ from app.models.tag_model import Tag
 from litestar.dto import DTOData
 from sqlalchemy import select
 from litestar.exceptions import HTTPException
+from app.utils.pika import RabbitMQConnection
 
 
 class TagController(Controller):
@@ -21,6 +22,9 @@ class TagController(Controller):
     async def get_tags(self, db_session: AsyncSession) -> list[TagReturn]:
         all_tags_request = await db_session.execute(select(Tag))
         all_tags: list[Tag] = all_tags_request.scalars().all()
+        with RabbitMQConnection() as conn:
+            conn.publish_message(
+                'info', 'Server is getting all tags')
         return [TagReturn(**(tag.to_dict())) for tag in all_tags]
 
     @get(path="/{id:uuid}")
