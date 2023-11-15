@@ -10,6 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.utils.controller import Service
 from .post_model import posts_shared_association
 from .event_model import event_attending_associations
+from .base_for_modelling import BaseModel
 
 user_followers_association = Table(
     'user_followers', UUIDBase.metadata,
@@ -75,3 +76,10 @@ class UserService(Service[UserModel]):
 write_config = DTOConfig()  # Create a DTOConfig instance for write operations
 WriteDTO = SQLAlchemyDTO[Annotated[UserModel, write_config]]
 ReadDTO = SQLAlchemyDTO[UserModel]
+
+
+class UserCreateModel(BaseModel):
+    username: str
+    password: str
+    profile_picture: str
+    profile_bio: str

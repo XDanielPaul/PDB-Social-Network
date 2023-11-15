@@ -15,6 +15,7 @@ from app.utils.pika import RabbitMQConnection
 
 
 from app.controllers.command.UserController import UserController
+from app.controllers.command.TagController import TagController
 
 
 @get("/")
@@ -35,14 +36,14 @@ sqlalchemy_config = SQLAlchemyAsyncConfig(
 sqlalchemy_plugin = SQLAlchemyInitPlugin(config=sqlalchemy_config)
 
 
-async def on_startup() -> None:
+async def on_startup(app: Litestar) -> None:
     """Initializes the database."""
-    async with sqlalchemy_config.get_engine().begin() as conn:
+    async with app.state.db_engine.begin() as conn:
         # await conn.run_sync(UUIDBase.metadata.drop_all) # <---- Uncomment this if you need to reset database
         await conn.run_sync(UUIDBase.metadata.create_all)
 
 app = Litestar(
+    plugins=[SQLAlchemyInitPlugin(sqlalchemy_config)],
     on_startup=[on_startup],
-    plugins=[SQLAlchemyInitPlugin(config=sqlalchemy_config)],
-    route_handlers=[hello_world, UserController],
+    route_handlers=[hello_world, UserController, TagController],
 )

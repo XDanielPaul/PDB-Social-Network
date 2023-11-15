@@ -14,7 +14,8 @@ class UserController(Controller):
     # Dependency injection
     dto = WriteDTO
     return_dto = ReadDTO
-    dependencies = {"service": Provide(provides_user_service, sync_to_thread=False)}
+    dependencies = {"service": Provide(
+        provides_user_service, sync_to_thread=False)}
 
     @get(path="/users")
     async def get_users(self, service: Service) -> list[UserModel]:
@@ -38,7 +39,8 @@ class UserController(Controller):
         updated_user = await service.update(user_id, data)
         await service.repository.session.commit()
         with RabbitMQConnection() as conn:
-            conn.publish_message('hello', UserModel.to_dict(updated_user, 'put'))
+            conn.publish_message(
+                'hello', UserModel.to_dict(updated_user, 'put'))
         return updated_user
 
     @delete(path="/users/{user_id:uuid}", status_code=HTTP_200_OK)
@@ -46,5 +48,6 @@ class UserController(Controller):
         deleted_user = await service.delete(user_id)
         await service.repository.session.commit()
         with RabbitMQConnection() as conn:
-            conn.publish_message('hello', UserModel.to_dict(deleted_user, 'delete'))
+            conn.publish_message(
+                'hello', UserModel.to_dict(deleted_user, 'delete'))
         return deleted_user

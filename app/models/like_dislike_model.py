@@ -10,8 +10,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.utils.controller import Service
 from .post_model import posts_shared_association
 
+
 class LikeDislike(UUIDBase):
-    review_type : Mapped[bool]
+    review_type: Mapped[bool]
 
     reviewed_by_id = Column(ForeignKey('users.id'))
     reviewed_by = relationship("UserModel", back_populates="likes_dislikes")

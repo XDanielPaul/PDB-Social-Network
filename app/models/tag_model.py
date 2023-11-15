@@ -21,3 +21,9 @@ class Tag(UUIDBase):
 
     tagged_posts = relationship(
         'Post', secondary=tags_posts_associations, back_populates='tagged')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name
+        }
