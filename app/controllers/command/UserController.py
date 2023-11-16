@@ -9,7 +9,7 @@ from litestar.exceptions import HTTPException
 from app.utils.pika import RabbitMQConnection
 from app.models.user_model import UserModel, UserCreateModel, PartialUserDto, UserReturn, UserReturnDto
 from app.models.base_for_modelling import DeleteConfirm
-
+import json
 
 class UserController(Controller):
 
@@ -40,6 +40,10 @@ class UserController(Controller):
         db_session.add(created_user)
         await db_session.commit()
         await db_session.refresh(created_user)
+
+        with RabbitMQConnection() as conn:
+            conn.publish_message('user',created_user.format_for_rabbit('CREATE'))
+
         return UserReturn(**(created_user.to_dict()))
 
     @put(path="/", dto=UserReturnDto, tags=["User"])

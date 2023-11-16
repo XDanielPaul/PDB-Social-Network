@@ -13,7 +13,7 @@ from .event_model import event_attending_associations
 from .base_for_modelling import BaseModel
 from litestar.dto import DTOConfig, DTOData
 from litestar.contrib.pydantic import PydanticDTO
-
+import json
 user_followers_association = Table(
     'user_followers', UUIDBase.metadata,
     Column('follower_id', ForeignKey('users.id'), primary_key=True),
@@ -60,7 +60,12 @@ class UserModel(UUIDBase):
             'profile_picture': self.profile_picture,
             'profile_bio': self.profile_bio
         }
-
+    def format_for_rabbit(self,method):
+        data = self.to_dict()
+        data['id'] = str(data['id']) # Formatting id to string, because uuid is not JSON serializable
+        data['method'] = method
+        return json.dumps(data)
+    
     def __repr__(self):
         # Do not print password?
         return f"<UserModel: id='{self.id}', username='{self.username}' >"

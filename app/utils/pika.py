@@ -1,9 +1,12 @@
 import json
 from typing import Callable
-
+import os
+import sys
 import pika
 from pika.adapters.blocking_connection import BlockingChannel
-
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
+from app.utils.rabbit_callbacks.user_callbacks import upload_user
 
 class PikaException(Exception):
     def __init__(self, message):
@@ -64,9 +67,19 @@ def hello_callback(ch, method, properties, body) -> None:
 def info_callback(ch, method, properties, body) -> None:
     print(f" [x] Received: {body.decode('utf-8')}")
 
-
+def user_callback(ch,method, properties,body) ->  None:
+    data = json.loads(json.loads(body))
+    print(f" [x] Received {json.loads(body)}")
+    if data['method'] == "CREATE":
+        result = upload_user(data)
+        if result:
+            print(f" [x]--------- Uploaded user [{data['_id']}] to mongodb")
+        else:
+            print(f" [x]--------- Upload of user [{data['_id']}] failed!")
+    
 # ---------------------------------------------------------
 # Queues
 # ---------------------------------------------------------
 queues_with_callbacks: dict[str, Callable[..., None]] = {
-    'hello': hello_callback, 'info': info_callback}
+    'hello': hello_callback, 'info': info_callback,'user':user_callback}
+

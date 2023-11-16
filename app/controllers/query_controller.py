@@ -11,7 +11,7 @@ try:
 except Exception as e:
     print(e)
 
-db = client["social_db"]
+mongo_db = client["social_db"]
 
 @get("/")
 async def hello_world() -> str:
