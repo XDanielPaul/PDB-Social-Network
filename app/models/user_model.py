@@ -1,6 +1,6 @@
 
 from typing import Annotated
-
+from uuid import UUID
 from litestar.contrib.sqlalchemy.base import UUIDAuditBase, UUIDBase
 from litestar.contrib.sqlalchemy.dto import SQLAlchemyDTO
 from litestar.contrib.sqlalchemy.repository import SQLAlchemyAsyncRepository
@@ -11,6 +11,8 @@ from app.utils.controller import Service
 from .post_model import posts_shared_association
 from .event_model import event_attending_associations
 from .base_for_modelling import BaseModel
+from litestar.dto import DTOConfig, DTOData
+from litestar.contrib.pydantic import PydanticDTO
 
 user_followers_association = Table(
     'user_followers', UUIDBase.metadata,
@@ -50,12 +52,13 @@ class UserModel(UUIDBase):
     attending_events = relationship(
         'Event', secondary=event_attending_associations, back_populates='attending_users')
 
-    def to_dict(user_instance, method):
+    def to_dict(self):
         return {
-            'method': method,
-            'class': user_instance.__class__.__name__,
-            'username': user_instance.username,
-            'password': user_instance.password,
+            'id': self.id,
+            'username': self.username,
+            'password': self.password,
+            'profile_picture': self.profile_picture,
+            'profile_bio': self.profile_bio
         }
 
     def __repr__(self):
@@ -83,3 +86,15 @@ class UserCreateModel(BaseModel):
     password: str
     profile_picture: str
     profile_bio: str
+
+
+class PartialUserDto(PydanticDTO[UserCreateModel]):
+    config = DTOConfig(partial=True)
+
+
+class UserReturn(UserCreateModel):
+    id: UUID
+
+
+class UserReturnDto(PydanticDTO[UserReturn]):
+    config = DTOConfig(partial=True)

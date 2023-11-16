@@ -1,53 +1,71 @@
 from litestar import delete, get, post, put
 from uuid import UUID
 from litestar.controller import Controller
-from litestar.di import Provide
-from litestar.status_codes import HTTP_200_OK
-from app.controllers.provide_services import provides_user_service
-from app.models.user_model import ReadDTO, UserModel, WriteDTO
-from app.utils.controller import Service
+from litestar.status_codes import HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
+from sqlalchemy.ext.asyncio import AsyncSession
+from litestar.dto import DTOData
+from sqlalchemy import select
+from litestar.exceptions import HTTPException
 from app.utils.pika import RabbitMQConnection
+from app.models.user_model import UserModel, UserCreateModel, PartialUserDto, UserReturn, UserReturnDto
+from app.models.base_for_modelling import DeleteConfirm
 
 
-# UserModel controller which handles requests for /users
 class UserController(Controller):
-    # Dependency injection
-    dto = WriteDTO
-    return_dto = ReadDTO
-    dependencies = {"service": Provide(
-        provides_user_service, sync_to_thread=False)}
 
-    @get(path="/users")
-    async def get_users(self, service: Service) -> list[UserModel]:
-        return await service.list()
+    path = "/users"
 
-    @get(path="/users/{user_id:uuid}")
-    async def get_user(self, service: Service, user_id: UUID) -> UserModel:
-        return await service.get(user_id)
+    @get(path="/", tags=["User"])
+    async def get_users(self,  db_session: AsyncSession) -> list[UserReturn]:
+        request = await db_session.execute(select(UserModel))
+        return [UserReturn(**(user.to_dict())) for user in request.scalars().all()]
 
-    @post(path="/users")
-    async def create_user(self, service: Service, data: UserModel) -> UserModel:
-        new_user = await service.create(data)
-        await service.repository.session.commit()
-        with RabbitMQConnection() as conn:
-            conn.publish_message('hello', UserModel.to_dict(new_user, 'post'))
+    @get(path="/{id:uuid}", tags=["User"])
+    async def get_user(self, id: UUID, db_session: AsyncSession) -> UserReturn:
+        user = await db_session.get(UserModel, id)
 
-        return new_user
+        if not user:
+            raise HTTPException(
+                detail="User with this id does not exist", status_code=HTTP_404_NOT_FOUND)
+        return UserReturn(**(user.to_dict()))
 
-    @put(path="/users/{user_id:uuid}")
-    async def update_user(self, data: UserModel, service: Service, user_id: UUID) -> UserModel:
-        updated_user = await service.update(user_id, data)
-        await service.repository.session.commit()
-        with RabbitMQConnection() as conn:
-            conn.publish_message(
-                'hello', UserModel.to_dict(updated_user, 'put'))
-        return updated_user
+    @post(path="/", dto=PartialUserDto, tags=["User"])
+    async def create_user(self, data: DTOData[UserCreateModel], db_session: AsyncSession) -> UserReturn:
+        user_to_create = data.create_instance().model_dump()
+        check_if_exists = await db_session.execute(select(UserModel).filter(UserModel.username == user_to_create['username']))
+        if check_if_exists.scalars().first():
+            raise HTTPException(
+                detail="This user is already in the database.", status_code=HTTP_409_CONFLICT)
+        created_user = UserModel(**user_to_create)
+        db_session.add(created_user)
+        await db_session.commit()
+        await db_session.refresh(created_user)
+        return UserReturn(**(created_user.to_dict()))
 
-    @delete(path="/users/{user_id:uuid}", status_code=HTTP_200_OK)
-    async def delete_user(self, service: Service, user_id: UUID) -> UserModel:
-        deleted_user = await service.delete(user_id)
-        await service.repository.session.commit()
-        with RabbitMQConnection() as conn:
-            conn.publish_message(
-                'hello', UserModel.to_dict(deleted_user, 'delete'))
-        return deleted_user
+    @put(path="/", dto=UserReturnDto, tags=["User"])
+    async def update_user(self, data: DTOData[UserReturn], db_session: AsyncSession) -> UserReturn:
+        data_dct = data.create_instance().model_dump()
+        db_user = await db_session.get(UserModel, data_dct['id'])
+        if not db_user:
+            raise HTTPException(
+                detail="User with this id doesn't exist.", status_code=HTTP_404_NOT_FOUND)
+        db_user.username = data_dct.get('username', db_user.username)
+        db_user.profile_picture = data_dct.get(
+            'username', db_user.profile_picture)
+        db_user.profile_bio = data_dct.get('username', db_user.profile_bio)
+        await db_session.commit()
+        await db_session.refresh(db_user)
+        return UserReturn(**(db_user.to_dict()))
+
+    @delete(path="/{id:uuid}", status_code=200, tags=["User"])
+    async def delete_user(self, id: UUID, db_session: AsyncSession) -> DeleteConfirm:
+        db_user = await db_session.get(UserModel, id)
+        if not db_user:
+            raise HTTPException(
+                detail="User with this id doesn't exist.", status_code=HTTP_404_NOT_FOUND)
+        await db_session.delete(db_user)
+        await db_session.commit()
+        return DeleteConfirm(
+            deleted=True,
+            message=f"User with id [{id}] was deleted."
+        )
