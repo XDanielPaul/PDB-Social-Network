@@ -1,21 +1,19 @@
 import json
 from typing import Callable
-import os
-import sys
+
 import pika
 from pika.adapters.blocking_connection import BlockingChannel
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
-from app.utils.rabbit_callbacks.user_callbacks import upload_user,delete_user
-from app.utils.mongo_connection.mongo_collections import create_mongo_user,create_mongo_post
+
+from .mongo.collections import mongo_collections
+
+
 class PikaException(Exception):
     def __init__(self, message):
         super().__init__(message)
 
 
 class RabbitMQConnection:
-    credentials: pika.PlainCredentials = pika.PlainCredentials(
-        'admin', 'admin')
+    credentials: pika.PlainCredentials = pika.PlainCredentials('admin', 'admin')
 
     def __init__(self, reciever: bool = False):
         self.reciever = reciever
@@ -24,8 +22,7 @@ class RabbitMQConnection:
         # Establish RabbitMQ connection and channel
         try:
             self.connection = pika.BlockingConnection(
-                pika.ConnectionParameters(
-                    'localhost', credentials=self.credentials)
+                pika.ConnectionParameters('localhost', credentials=self.credentials)
             )
             self.channel = self.connection.channel()
         except:
@@ -41,8 +38,7 @@ class RabbitMQConnection:
 
     def handle_queues(self) -> None:
         for queue, callback in queues_with_callbacks.items():
-            self.channel.basic_consume(
-                queue=queue, on_message_callback=callback, auto_ack=True)
+            self.channel.basic_consume(queue=queue, on_message_callback=callback, auto_ack=True)
 
     def declare_queues(self) -> None:
         for queue in queues_with_callbacks.keys():
@@ -50,11 +46,9 @@ class RabbitMQConnection:
 
     def publish_message(self, queue, message) -> None:
         if not self.reciever:
-            self.channel.basic_publish(
-                exchange='', routing_key=queue, body=json.dumps(message))
+            self.channel.basic_publish(exchange='', routing_key=queue, body=json.dumps(message))
         else:
-            raise PikaException(
-                "Cannot publish message from reciever connection.")
+            raise PikaException("Cannot publish message from reciever connection.")
 
 
 # ---------------------------------------------------------
@@ -67,25 +61,40 @@ def hello_callback(ch, method, properties, body) -> None:
 def info_callback(ch, method, properties, body) -> None:
     print(f" [x] Received: {body.decode('utf-8')}")
 
-def user_callback(ch,method, properties,body) ->  None:
-    data = json.loads(json.loads(body))
-    print(f" [x] Received {json.loads(body)}")
-    if data['method'] == "CREATE":
-        result = upload_user(create_mongo_user(data))
-        if result:
-            print(f" [x]--------- Uploaded user [{data['id']}] to mongodb")
-        else:
-            print(f" [x]--------- Upload of user [{data['id']}] failed!")
-    elif data['method'] == "DELETE":
-        result = delete_user(data)
-        if result:
-            print(f" [x]--------- Deleted user [{data['id']}] from mongodb")
-        else:
-            print(f" [x]--------- Deletion of user [{data['id']}] failed!")
+
+status = {True: '\033[92m Succeded! \033[0m', False: '\033[91m Failed! \033[0m'}
+
+
+def handle_message_callback(ch, method, properties, body) -> None:
+    message = json.loads(json.loads(body))
+    print(f" [x] Received {message}")
+
+    collection = mongo_collections[message['model']]
+    match message['method']:
+        case 'CREATE':
+            res = collection.add_document(message['data'])
+            print(
+                f" [x] Adding document to collection '{message['model']}': {message['data']} {status[res.acknowledged]}"
+            )
+        case 'UPDATE':
+            res = collection.update_document(message['data']['_id'], message['data'])
+            print(
+                f" [x] Updating document in collection {message['model']} with ID '{message['data']['_id']}': {message['data']} {status[res.acknowledged]}"
+            )
+        case 'DELETE':
+            res = collection.remove_document(message['data']['_id'])
+            print(
+                f" [x] Removing document from collection {message['model']} with ID '{message['data']['_id']}' {status[res.acknowledged]}"
+            )
+        case _:
+            print(" [x] Shit has happened")
+
 
 # ---------------------------------------------------------
 # Queues
 # ---------------------------------------------------------
 queues_with_callbacks: dict[str, Callable[..., None]] = {
-    'hello': hello_callback, 'info': info_callback,'user':user_callback}
-
+    'hello': hello_callback,
+    'info': info_callback,
+    'user': handle_message_callback,
+}

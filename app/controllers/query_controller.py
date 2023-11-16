@@ -1,6 +1,5 @@
-from litestar import Litestar, get
-
 import motor.motor_asyncio as motor
+from litestar import Litestar, get
 
 local_connection_string = ""
 
@@ -12,6 +11,7 @@ except Exception as e:
     print(e)
 
 mongo_db = client["social_db"]
+
 
 @get("/")
 async def hello_world() -> str:

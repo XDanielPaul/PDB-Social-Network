@@ -1,27 +1,30 @@
-
+import json
 from typing import Annotated
 from uuid import UUID
+
+from litestar.contrib.pydantic import PydanticDTO
 from litestar.contrib.sqlalchemy.base import UUIDAuditBase, UUIDBase
 from litestar.contrib.sqlalchemy.dto import SQLAlchemyDTO
 from litestar.contrib.sqlalchemy.repository import SQLAlchemyAsyncRepository
-from litestar.dto import DTOConfig
-from sqlalchemy import ForeignKey, Table, Column
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from app.utils.controller import Service
-from .post_model import posts_shared_association
-from .event_model import event_attending_associations
-from .base_for_modelling import BaseModel
 from litestar.dto import DTOConfig, DTOData
-from litestar.contrib.pydantic import PydanticDTO
-import json
+from sqlalchemy import Column, ForeignKey, Table
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.utils.controller import Service
+
+from .base_for_modelling import BaseModel
+from .event_model import event_attending_associations
+from .post_model import posts_shared_association
+
 user_followers_association = Table(
-    'user_followers', UUIDBase.metadata,
+    'user_followers',
+    UUIDBase.metadata,
     Column('follower_id', ForeignKey('users.id'), primary_key=True),
     Column('followed_id', ForeignKey('users.id'), primary_key=True),
 )
 
 
-class UserModel(UUIDBase):
+class User(UUIDBase):
     __tablename__ = 'users'
     username: Mapped[str]
     password: Mapped[str]
@@ -29,61 +32,88 @@ class UserModel(UUIDBase):
     profile_bio: Mapped[str]
 
     followers = relationship(
-        'UserModel',
+        'User',
         secondary=user_followers_association,
-        primaryjoin="UserModel.id == user_followers.c.followed_id",
-        secondaryjoin="UserModel.id == user_followers.c.follower_id",
-        back_populates='following'
+        primaryjoin="User.id == user_followers.c.followed_id",
+        secondaryjoin="User.id == user_followers.c.follower_id",
+        back_populates='following',
     )
     following = relationship(
-        'UserModel',
+        'User',
         secondary=user_followers_association,
-        primaryjoin="UserModel.id == user_followers.c.follower_id",
-        secondaryjoin="UserModel.id == user_followers.c.followed_id",
-        back_populates='followers'
+        primaryjoin="User.id == user_followers.c.follower_id",
+        secondaryjoin="User.id == user_followers.c.followed_id",
+        back_populates='followers',
     )
     posts = relationship("Post", back_populates="created_by")
 
     shared_posts = relationship(
-        'Post', secondary=posts_shared_association, back_populates='shared_by_users')
+        'Post', secondary=posts_shared_association, back_populates='shared_by_users'
+    )
     comments = relationship('Comment', back_populates="created_comment_by")
     likes_dislikes = relationship('LikeDislike', back_populates="reviewed_by")
     created_events = relationship('Event', back_populates='created_event')
     attending_events = relationship(
-        'Event', secondary=event_attending_associations, back_populates='attending_users')
+        'Event', secondary=event_attending_associations, back_populates='attending_users'
+    )
 
-    def to_dict(self):
+    def to_dict_create(self):
         return {
-            'id': self.id,
+            '_id': str(self.id),
             'username': self.username,
             'password': self.password,
             'profile_picture': self.profile_picture,
-            'profile_bio': self.profile_bio
+            'profile_bio': self.profile_bio,
+            'postInfoIds': [],
+            'followers': [],
+            'follows': [],
+            'shared_posts': [],
+            'arrtending_events': [],
         }
-    def format_for_rabbit(self,method):
-        data = self.to_dict()
-        data['id'] = str(data['id']) # Formatting id to string, because uuid is not JSON serializable
-        data['method'] = method
-        return json.dumps(data)
-    
+
+    def to_dict_update(self):
+        return {
+            '_id': str(self.id),
+            'username': self.username,
+            'password': self.password,
+            'profile_picture': self.profile_picture,
+            'profile_bio': self.profile_bio,
+        }
+
+    def to_dict_delete(self):
+        return {'_id': str(self.id)}
+
+    def format_for_rabbit(self, method):
+        message = {'model': self.__tablename__, 'method': method}
+
+        match method:
+            case 'CREATE':
+                message['data'] = self.to_dict_create()
+            case 'UPDATE':
+                message['data'] = self.to_dict_update()
+            case 'DELETE':
+                message['data'] = self.to_dict_delete()
+
+        return json.dumps(message)
+
     def __repr__(self):
         # Do not print password?
-        return f"<UserModel: id='{self.id}', username='{self.username}' >"
+        return f"<User: id='{self.id}', username='{self.username}' >"
 
 
-class UserRepository(SQLAlchemyAsyncRepository[UserModel]):
+class UserRepository(SQLAlchemyAsyncRepository[User]):
     """User repository"""
 
-    model_type = UserModel
+    model_type = User
 
 
-class UserService(Service[UserModel]):
+class UserService(Service[User]):
     repository_type = UserRepository
 
 
 write_config = DTOConfig()  # Create a DTOConfig instance for write operations
-WriteDTO = SQLAlchemyDTO[Annotated[UserModel, write_config]]
-ReadDTO = SQLAlchemyDTO[UserModel]
+WriteDTO = SQLAlchemyDTO[Annotated[User, write_config]]
+ReadDTO = SQLAlchemyDTO[User]
 
 
 class UserCreateModel(BaseModel):
