@@ -1,4 +1,8 @@
 from typing import Annotated
+from pydantic import BaseModel
+from uuid import UUID
+from litestar.dto import DTOConfig, DTOData
+from litestar.contrib.pydantic import PydanticDTO
 
 from litestar.contrib.sqlalchemy.base import UUIDAuditBase, UUIDBase
 from litestar.contrib.sqlalchemy.dto import SQLAlchemyDTO
@@ -27,3 +31,20 @@ class Tag(UUIDBase):
             'id': self.id,
             'name': self.name
         }
+
+
+class TagPost(BaseModel):
+    name: str
+
+
+class PartialTagPostDTO(PydanticDTO[TagPost]):
+    config = DTOConfig(partial=True)
+
+
+class TagReturn(BaseModel):
+    id: UUID
+    name: str
+
+
+class TagPostDTO(PydanticDTO[TagReturn]):
+    config = DTOConfig(partial=True)

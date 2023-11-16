@@ -1,13 +1,9 @@
 from litestar import delete, get, post, put
 from uuid import UUID
 from litestar.controller import Controller
-from litestar.status_codes import HTTP_200_OK, HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
-from typing import TYPE_CHECKING
-from pydantic import BaseModel
+from litestar.status_codes import HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.user_model import UserModel
-import random
-from .DataModels.TagModels import TagPost, TagReturn, PartialTagPostDTO, TagPostDTO
+from app.models.tag_model import TagPost, TagReturn, PartialTagPostDTO, TagPostDTO
 from app.models.tag_model import Tag
 from litestar.dto import DTOData
 from sqlalchemy import select
