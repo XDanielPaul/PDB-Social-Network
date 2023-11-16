@@ -6,8 +6,8 @@ import pika
 from pika.adapters.blocking_connection import BlockingChannel
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
-from app.utils.rabbit_callbacks.user_callbacks import upload_user
-
+from app.utils.rabbit_callbacks.user_callbacks import upload_user,delete_user
+from app.utils.mongo_connection.mongo_collections import create_mongo_user,create_mongo_post
 class PikaException(Exception):
     def __init__(self, message):
         super().__init__(message)
@@ -71,12 +71,18 @@ def user_callback(ch,method, properties,body) ->  None:
     data = json.loads(json.loads(body))
     print(f" [x] Received {json.loads(body)}")
     if data['method'] == "CREATE":
-        result = upload_user(data)
+        result = upload_user(create_mongo_user(data))
         if result:
-            print(f" [x]--------- Uploaded user [{data['_id']}] to mongodb")
+            print(f" [x]--------- Uploaded user [{data['id']}] to mongodb")
         else:
-            print(f" [x]--------- Upload of user [{data['_id']}] failed!")
-    
+            print(f" [x]--------- Upload of user [{data['id']}] failed!")
+    elif data['method'] == "DELETE":
+        result = delete_user(data)
+        if result:
+            print(f" [x]--------- Deleted user [{data['id']}] from mongodb")
+        else:
+            print(f" [x]--------- Deletion of user [{data['id']}] failed!")
+
 # ---------------------------------------------------------
 # Queues
 # ---------------------------------------------------------

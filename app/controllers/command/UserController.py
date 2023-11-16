@@ -67,8 +67,11 @@ class UserController(Controller):
         if not db_user:
             raise HTTPException(
                 detail="User with this id doesn't exist.", status_code=HTTP_404_NOT_FOUND)
+        with RabbitMQConnection() as conn:
+            conn.publish_message('user',db_user.format_for_rabbit('DELETE'))
         await db_session.delete(db_user)
         await db_session.commit()
+
         return DeleteConfirm(
             deleted=True,
             message=f"User with id [{id}] was deleted."
