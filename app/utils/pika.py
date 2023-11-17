@@ -5,7 +5,7 @@ import pika
 from pika.adapters.blocking_connection import BlockingChannel
 
 from .mongo.collections import mongo_collections
-
+from .mongo.tag_methods import add_tags_to_post
 
 class PikaException(Exception):
     def __init__(self, message):
@@ -89,12 +89,19 @@ def handle_message_callback(ch, method, properties, body) -> None:
         case _:
             print(" [x] Shit has happened")
 
-
+def handle_tags_callback(ch,method,properties,body):
+    message = json.loads(json.loads(body))
+    match message["method"]:
+        case 'ADD':
+            result = add_tags_to_post(message['post_id'],message['tags'])
+            if result:
+                print(f' [x] Added tags to post {message["post_id"]} - {message["tags"]}')
 # ---------------------------------------------------------
 # Queues
 # ---------------------------------------------------------
 queues_with_callbacks: dict[str, Callable[..., None]] = {
     'hello': hello_callback,
     'info': info_callback,
-    'user': handle_message_callback,
+    'crud_operations': handle_message_callback,
+    'tags' : handle_tags_callback
 }

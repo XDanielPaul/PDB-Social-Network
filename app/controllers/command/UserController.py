@@ -50,7 +50,7 @@ class UserController(Controller):
         await db_session.refresh(created_user)
 
         with RabbitMQConnection() as conn:
-            conn.publish_message('user', created_user.format_for_rabbit('CREATE'))
+            conn.publish_message('crud_operations', created_user.format_for_rabbit('CREATE'))
 
         return UserReturn(**(created_user.to_dict()))
 
@@ -77,7 +77,7 @@ class UserController(Controller):
                 detail="User with this id doesn't exist.", status_code=HTTP_404_NOT_FOUND
             )
         with RabbitMQConnection() as conn:
-            conn.publish_message('user', db_user.format_for_rabbit('DELETE'))
+            conn.publish_message('crud_operations', db_user.format_for_rabbit('DELETE'))
         await db_session.delete(db_user)
         await db_session.commit()
 

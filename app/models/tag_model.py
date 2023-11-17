@@ -26,11 +26,22 @@ class Tag(UUIDBase):
     tagged_posts = relationship(
         'Post', secondary=tags_posts_associations, back_populates='tagged')
 
-    def to_dict(self):
+    def to_dict(self):  
         return {
             'id': self.id,
             'name': self.name
         }
+    def to_dict_create(self):
+        return {
+            '_id' : str(self.id),
+            'name' : self.name
+        }
+    def format_for_rabbit(self, method):
+        message = {'model':self.__tablename__,'method':method}
+        match method:
+            case 'ADD':
+                return self.to_dict_create()
+
 
 
 class TagPost(BaseModel):
