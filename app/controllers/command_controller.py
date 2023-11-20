@@ -6,9 +6,10 @@ from litestar.contrib.sqlalchemy.plugins.init.config import (
     SQLAlchemyAsyncConfig,
 )
 
+from app.controllers.command.CommentController import CommentController
+from app.controllers.command.PostController import PostController
 from app.controllers.command.TagController import TagController
 from app.controllers.command.UserController import UserController
-from app.controllers.command.PostController import PostController
 from app.models.comment_model import Comment
 from app.models.event_model import Event
 from app.models.like_dislike_model import LikeDislike
@@ -46,5 +47,5 @@ async def on_startup(app: Litestar) -> None:
 app = Litestar(
     plugins=[SQLAlchemyInitPlugin(sqlalchemy_config)],
     on_startup=[on_startup],
-    route_handlers=[hello_world, UserController, TagController,PostController],
+    route_handlers=[hello_world, UserController, TagController, PostController, CommentController],
 )

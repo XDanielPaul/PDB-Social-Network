@@ -7,17 +7,20 @@ class CollectionController:
     def __init__(self, collection):
         self.collection: Collection = collection
 
-    def add_document(self, document):
-        return self.collection.insert_one(document)
+    def add_document(self, document) -> bool:
+        result = self.collection.insert_one(document)
+        return result.acknowledged
 
-    def update_document(self, document_id, update_data):
+    def update_document(self, document_id, update_data) -> bool:
         filter_query = {"_id": document_id}
         update_query = {"$set": update_data}
-        return self.collection.update_one(filter_query, update_query)
+        result = self.collection.update_one(filter_query, update_query)
+        return result.acknowledged and result.modified_count > 0
 
-    def remove_document(self, document_id):
+    def remove_document(self, document_id) -> bool:
         filter_query = {"_id": document_id}
-        return self.collection.delete_one(filter_query)
+        result = self.collection.delete_one(filter_query)
+        return result.acknowledged and result.deleted_count > 0
 
     def find_document(self, query):
         return self.collection.find_one(query)

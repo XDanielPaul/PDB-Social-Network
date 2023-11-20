@@ -5,7 +5,8 @@ import pika
 from pika.adapters.blocking_connection import BlockingChannel
 
 from .mongo.collections import mongo_collections
-from .mongo.tag_methods import add_tags_to_post
+from .mongo.custom_methods import add_comment_to_post, add_tags_to_post
+
 
 class PikaException(Exception):
     def __init__(self, message):
@@ -65,7 +66,7 @@ def info_callback(ch, method, properties, body) -> None:
 status = {True: '\033[92m Succeded! \033[0m', False: '\033[91m Failed! \033[0m'}
 
 
-def handle_message_callback(ch, method, properties, body) -> None:
+def handle_crud_callback(ch, method, properties, body) -> None:
     message = json.loads(json.loads(body))
     print(f" [x] Received {message}")
 
@@ -74,34 +75,47 @@ def handle_message_callback(ch, method, properties, body) -> None:
         case 'CREATE':
             res = collection.add_document(message['data'])
             print(
-                f" [x] Adding document to collection '{message['model']}': {message['data']} {status[res.acknowledged]}"
+                f" [x] Adding document to collection '{message['model']}': {message['data']} {status[res]}"
             )
         case 'UPDATE':
             res = collection.update_document(message['data']['_id'], message['data'])
             print(
-                f" [x] Updating document in collection {message['model']} with ID '{message['data']['_id']}': {message['data']} {status[res.acknowledged]}"
+                f" [x] Updating document in collection {message['model']} with ID '{message['data']['_id']}': {message['data']} {status[res]}"
             )
         case 'DELETE':
             res = collection.remove_document(message['data']['_id'])
             print(
-                f" [x] Removing document from collection {message['model']} with ID '{message['data']['_id']}' {status[res.acknowledged]}"
+                f" [x] Removing document from collection {message['model']} with ID '{message['data']['_id']}' {status[res]}"
             )
         case _:
             print(" [x] Shit has happened")
 
-def handle_tags_callback(ch,method,properties,body):
+
+def handle_tags_callback(ch, method, properties, body):
     message = json.loads(json.loads(body))
     match message["method"]:
         case 'ADD':
-            result = add_tags_to_post(message['post_id'],message['tags'])
-            if result:
-                print(f' [x] Added tags to post {message["post_id"]} - {message["tags"]}')
+            res = add_tags_to_post(message['post_id'], message['tags'])
+            print(f' [x] Added tags to post {message["post_id"]} - {message["tags"]} {status[res]}')
+
+
+def handle_comments_callback(ch, method, properties, body):
+    message = json.loads(json.loads(body))
+    match message['method']:
+        case 'ADD':
+            res = add_comment_to_post(message['post_id'], message['comment_id'])
+            print(
+                f' [x] Added comment to post {message["post_id"]} - {message["comment_id"]} {status[res]}'
+            )
+
+
 # ---------------------------------------------------------
 # Queues
 # ---------------------------------------------------------
 queues_with_callbacks: dict[str, Callable[..., None]] = {
     'hello': hello_callback,
     'info': info_callback,
-    'crud_operations': handle_message_callback,
-    'tags' : handle_tags_callback
+    'crud_operations': handle_crud_callback,
+    'tags': handle_tags_callback,
+    'comments': handle_comments_callback,
 }
