@@ -54,12 +54,18 @@ class Post(UUIDAuditBase):
             'likes_dislikes': [],
             'tags': [],
         }
-
+    def to_dict_delete(self):
+        return { 
+            '_id' : str(self.id)
+        }
     def format_for_rabbit(self, method):
         message = {'model': self.__tablename__, 'method': method}
         match method:
             case 'CREATE':
                 message['data'] = self.to_dict_create()
+            case 'DELETE':
+                message['data'] = self.to_dict_delete()
+        
         return json.dumps(message)
 
 
@@ -85,4 +91,22 @@ class PostReturnModel(PostCreate):
 
 
 class PartialPostReturnDto(PydanticDTO[PostReturnModel]):
+    config = DTOConfig(partial=True)
+
+class PostLikeDislike(BaseModel):
+    post_id: UUID4
+    like: bool
+
+class PostLikeDislikeDto(PydanticDTO[PostLikeDislike]):
+    config = DTOConfig(partial=True)
+
+class LikeDislikeModel(BaseModel):
+    user_id : UUID4
+    post_id : UUID4
+    review_type : bool
+
+class LikeDislikeDeleteModel(BaseModel):
+    post_id : str
+
+class LikeDislikeDeleteModelDto(PydanticDTO[LikeDislikeDeleteModel]):
     config = DTOConfig(partial=True)

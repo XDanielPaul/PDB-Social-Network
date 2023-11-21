@@ -67,10 +67,14 @@ class UserController(Controller):
     async def create_user(
         self, data: DTOData[UserCreateModel], db_session: AsyncSession
     ) -> UserReturn:
+        
         user_to_create = data.create_instance().model_dump()
+        
         check_if_exists = await db_session.execute(
             select(User).filter(User.username == user_to_create['username'])
         )
+        
+        print(user_to_create)
         if check_if_exists.scalars().first():
             raise HTTPException(
                 detail="This user is already in the database.", status_code=HTTP_409_CONFLICT

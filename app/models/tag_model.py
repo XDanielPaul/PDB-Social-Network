@@ -29,7 +29,10 @@ class Tag(UUIDBase):
 
     def to_dict_create(self):
         return {'_id': str(self.id), 'name': self.name}
-
+    def to_dict_delete(self):
+        return {
+            '_id': str(self.id)
+        }
     def format_for_rabbit(self, method):
         message = {'model': self.__tablename__, 'method': method}
         match method:

@@ -99,6 +99,7 @@ def handle_tags_callback(ch, method, properties, body):
             print(f' [x] Added tags to post {message["post_id"]} - {message["tags"]} {status[res]}')
 
 
+
 def handle_comments_callback(ch, method, properties, body):
     message = json.loads(json.loads(body))
     match message['method']:
