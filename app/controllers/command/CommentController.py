@@ -1,8 +1,9 @@
 import json
-from typing import Annotated
+from typing import Annotated, Any
 from uuid import UUID
 
-from litestar import delete, post, put
+from litestar import Request, delete, post, put
+from litestar.contrib.jwt import Token
 from litestar.controller import Controller
 from litestar.dto import DTOData
 from litestar.enums import RequestEncodingType
@@ -29,9 +30,14 @@ class CommentController(Controller):
     path = "/comments"
 
     @post('/', tags=["Comments"], dto=PartialCommentDto)
-    async def create_comment(self, data: DTOData[CommentCreate], db_session: AsyncSession) -> dict:
+    async def create_comment(
+        self,
+        request: Request[User, Token, Any],
+        data: DTOData[CommentCreate],
+        db_session: AsyncSession,
+    ) -> dict:
         data_dct = data.create_instance()
-        db_user = await db_session.get(User, data_dct.created_by_id)
+        db_user = await db_session.get(User, request.auth.sub)
 
         if not db_user:
             raise HTTPException(
@@ -64,16 +70,27 @@ class CommentController(Controller):
             conn.publish_message('crud_operations', db_comment.format_for_rabbit('CREATE'))
             conn.publish_message('comments', data_for_rabbit)
 
-        return {'return': True}
+        return {'Comment': db_comment.to_dict_create()}
 
     @put(path='/', dto=PartialUpdateCommentDto, tags=["Comments"])
-    async def update_comment(self, data: DTOData[UpdateComment], db_session: AsyncSession) -> dict:
+    async def update_comment(
+        self,
+        request: Request[User, Token, Any],
+        data: DTOData[UpdateComment],
+        db_session: AsyncSession,
+    ) -> dict:
         data_dct = data.create_instance().model_dump()
         db_comment = await db_session.get(Comment, data_dct['id'])
 
         if not db_comment:
             raise HTTPException(
                 detail="Comment with this id does not exist", status_code=HTTP_404_NOT_FOUND
+            )
+
+        if db_comment.created_comment_by_id != request.auth.sub:
+            raise HTTPException(
+                detail="You are not allowed to update this comment.",
+                status_code=HTTP_409_CONFLICT,
             )
 
         db_comment.content = data_dct['content']
@@ -86,12 +103,21 @@ class CommentController(Controller):
         return {'return': True}
 
     @delete(path="/{id:uuid}", status_code=200, tags=["Comments"])
-    async def delete_comment(self, id: UUID, db_session: AsyncSession) -> DeleteConfirm:
+    async def delete_comment(
+        self, request: Request[User, Token, Any], id: UUID, db_session: AsyncSession
+    ) -> DeleteConfirm:
         db_comment = await db_session.get(Comment, id)
         if not db_comment:
             raise HTTPException(
                 detail="Comment with this id does not exist", status_code=HTTP_404_NOT_FOUND
             )
+
+        if db_comment.created_comment_by_id != request.auth.sub:
+            raise HTTPException(
+                detail="You are not allowed to delete this comment.",
+                status_code=HTTP_409_CONFLICT,
+            )
+
         await db_session.delete(db_comment)
         await db_session.commit()
 

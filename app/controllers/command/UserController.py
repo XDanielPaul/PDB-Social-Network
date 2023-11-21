@@ -1,7 +1,10 @@
 import json
+from typing import Any, Optional
 from uuid import UUID
 
-from litestar import delete, get, post, put
+from litestar import Response, delete, get, post, put
+from litestar.connection import ASGIConnection
+from litestar.contrib.jwt import JWTAuth, Token
 from litestar.controller import Controller
 from litestar.dto import DTOData
 from litestar.exceptions import HTTPException
@@ -10,8 +13,36 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.base_for_modelling import DeleteConfirm
-from app.models.user_model import PartialUserDto, User, UserCreateModel, UserReturn, UserReturnDto
+from app.models.user_model import (
+    PartialUserDto,
+    PartiaUserLoginDto,
+    User,
+    UserCreateModel,
+    UserLogin,
+    UserReturn,
+    UserReturnDto,
+)
 from app.utils.pika import RabbitMQConnection
+
+
+# Authentication
+async def retrieve_user_handler(
+    token: Token, connection: ASGIConnection[Any, Any, Any, Any]
+) -> Optional[User]:
+    async with connection.app.state.db_engine.begin() as db_conn:
+        result = await db_conn.execute(select(User).where(User.id == token.sub))
+        user = result.scalar_one_or_none()
+
+    if not user:
+        return None
+    return user
+
+
+jwt_auth = JWTAuth[User](
+    retrieve_user_handler=retrieve_user_handler,
+    token_secret="secret",
+    exclude=['/schema', '/users/login', '/users/register'],
+)
 
 
 class UserController(Controller):
@@ -32,7 +63,7 @@ class UserController(Controller):
             )
         return UserReturn(**(user.to_dict()))
 
-    @post(path="/", dto=PartialUserDto, tags=["User"])
+    @post(path="/register", dto=PartialUserDto, tags=["User"])
     async def create_user(
         self, data: DTOData[UserCreateModel], db_session: AsyncSession
     ) -> UserReturn:
@@ -82,3 +113,23 @@ class UserController(Controller):
         await db_session.commit()
 
         return DeleteConfirm(deleted=True, message=f"User with id [{id}] was deleted.")
+
+    @post(path="/login", dto=PartiaUserLoginDto, tags=["User"])
+    async def login(self, data: DTOData[UserLogin], db_session: AsyncSession) -> Response[User]:
+        user_to_login = data.create_instance().model_dump()
+        result = await db_session.execute(
+            select(User).where(User.username == user_to_login['username'])
+        )
+        db_user = result.scalar_one_or_none()
+        if not db_user:
+            raise HTTPException(
+                detail="User with this username doesn't exist.", status_code=HTTP_404_NOT_FOUND
+            )
+        if db_user.password != user_to_login['password']:
+            raise HTTPException(detail="Wrong password.", status_code=HTTP_404_NOT_FOUND)
+
+        response = jwt_auth.login(
+            identifier=str(db_user.id),
+            send_token_as_response_body=True,
+        )
+        return response

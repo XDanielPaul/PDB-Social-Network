@@ -10,8 +10,6 @@ from litestar.dto import DTOConfig, DTOData
 from sqlalchemy import Column, ForeignKey, Table
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.utils.controller import Service
-
 from .base_for_modelling import BaseModel
 from .event_model import event_attending_associations
 from .post_model import posts_shared_association
@@ -101,14 +99,12 @@ class User(UUIDBase):
         return f"<User: id='{self.id}', username='{self.username}' >"
 
 
-class UserRepository(SQLAlchemyAsyncRepository[User]):
-    """User repository"""
+# class UserRepository(SQLAlchemyAsyncRepository[User]):
+#    """User repository"""
+#
 
-    model_type = User
 
-
-class UserService(Service[User]):
-    repository_type = UserRepository
+# class UserService(Service[User]):
 
 
 write_config = DTOConfig()  # Create a DTOConfig instance for write operations
@@ -132,4 +128,13 @@ class UserReturn(UserCreateModel):
 
 
 class UserReturnDto(PydanticDTO[UserReturn]):
+    config = DTOConfig(partial=True)
+
+
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
+
+class PartiaUserLoginDto(PydanticDTO[UserLogin]):
     config = DTOConfig(partial=True)

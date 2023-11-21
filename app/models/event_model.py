@@ -7,8 +7,6 @@ from litestar.dto import DTOConfig
 from sqlalchemy import Column, ForeignKey, Table
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.utils.controller import Service
-
 event_attending_associations = Table(
     'event_attending',
     UUIDBase.metadata,

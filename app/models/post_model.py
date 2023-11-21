@@ -14,8 +14,6 @@ from sqlalchemy import Column, ForeignKey, String, Table, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column, relationship, selectinload
 
-from app.utils.controller import Service
-
 from .tag_model import tags_posts_associations
 
 posts_shared_association = Table(
@@ -72,7 +70,6 @@ class TagInPost(BaseModel):
 class PostCreate(BaseModel):
     title: str
     content: str
-    created_by_id: UUID4
     tags: list[TagInPost]
 
 

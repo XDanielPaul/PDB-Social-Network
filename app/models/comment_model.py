@@ -53,7 +53,6 @@ class Comment(UUIDAuditBase):
 
 class CommentCreate(BaseModel):
     content: str
-    created_by_id: UUID4
     on_post_id: UUID4
 
 
