@@ -46,7 +46,9 @@ class User(UUIDBase):
     posts = relationship("Post", back_populates="created_by")
 
     shared_posts = relationship(
-        'Post', secondary=posts_shared_association, back_populates='shared_by_users'
+        'Post',
+        secondary=posts_shared_association,
+        back_populates='shared_by_users',
     )
     comments = relationship('Comment', back_populates="created_comment_by")
     likes_dislikes = relationship('LikeDislike', back_populates="reviewed_by")

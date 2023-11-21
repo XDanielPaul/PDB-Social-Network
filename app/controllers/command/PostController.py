@@ -1,7 +1,8 @@
 import json
 from typing import Annotated, Any
+from uuid import UUID
 
-from litestar import MediaType, Request, delete, get, post, put, Response
+from litestar import MediaType, Request, Response, delete, get, post, put
 from litestar.contrib.jwt import Token
 from litestar.controller import Controller
 from litestar.datastructures import UploadFile
@@ -10,32 +11,33 @@ from litestar.enums import RequestEncodingType
 from litestar.exceptions import HTTPException
 from litestar.params import Body
 from litestar.status_codes import (
-    HTTP_404_NOT_FOUND,
-    HTTP_409_CONFLICT,
     HTTP_204_NO_CONTENT,
     HTTP_401_UNAUTHORIZED,
+    HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
 )
-from sqlalchemy import select
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+
+from app.models.base_for_modelling import DeleteConfirm
+from app.models.like_dislike_model import LikeDislike
 from app.models.post_model import (
+    LikeDislikeDeleteModel,
+    LikeDislikeDeleteModelDto,
+    LikeDislikeModel,
     PartialPostDto,
     PartialPostReturnDto,
     Post,
     PostCreate,
-    PostReturnModel,
     PostLikeDislike,
     PostLikeDislikeDto,
-    LikeDislikeModel,
-    LikeDislikeDeleteModel,
-    LikeDislikeDeleteModelDto,
+    PostReturnModel,
+    posts_shared_association,
 )
 from app.models.tag_model import Tag, tags_posts_associations
 from app.models.user_model import User
-from app.models.like_dislike_model import LikeDislike
 from app.utils.pika import RabbitMQConnection
-from app.models.base_for_modelling import DeleteConfirm
-from uuid import UUID
 
 
 class PostController(Controller):
@@ -71,7 +73,7 @@ class PostController(Controller):
 
         post_without_tags = data_dct.model_dump()
         del post_without_tags['tags']
-        db_post = Post(**(post_without_tags))
+        db_post = Post(**(post_without_tags), created_by=db_user)
         db_session.add(db_post)
         await db_session.commit()
         await db_session.refresh(db_post)
@@ -184,3 +186,77 @@ class PostController(Controller):
             )
 
         return DeleteConfirm(deleted=True, message="Review was deleted.")
+
+    @post('/share/{id:uuid}', tags=["Posts"], dto=PartialPostDto)
+    async def share_post(
+        self,
+        request: Request[User, Token, Any],
+        id: UUID,
+        share: bool,
+        db_session: AsyncSession,
+    ) -> dict:
+        db_user = await db_session.get(User, request.auth.sub)
+
+        if not db_user:
+            raise HTTPException(
+                detail="User which creates the post doesnt exist.",
+                status_code=HTTP_404_NOT_FOUND,
+            )
+
+        db_post = await db_session.get(Post, id)
+
+        if not db_post:
+            raise HTTPException(
+                detail="Post which you want to share doesnt exist.",
+                status_code=HTTP_404_NOT_FOUND,
+            )
+
+        data_for_rabbit = json.dumps(
+            {
+                'post_id': str(db_post.id),
+                'user_id': str(db_user.id),
+                'method': 'ADD' if share else 'REMOVE',
+            }
+        )
+
+        if share:
+            # Check if user already shared this post
+            if db_user in db_post.shared_by_users:
+                raise HTTPException(
+                    detail="You already shared this post.", status_code=HTTP_409_CONFLICT
+                )
+
+            db_post.shared_by_users.append(db_user)
+            db_session.add(db_post)
+            await db_session.commit()
+
+            with RabbitMQConnection() as conn:
+                conn.publish_message('share_post', data_for_rabbit)
+
+            insert_statement = posts_shared_association.insert().values(
+                {'shared_by': db_user.id, 'shared_post': db_post.id}
+            )
+
+            await db_session.execute(insert_statement)
+            await db_session.commit()
+        else:
+            if db_user not in db_post.shared_by_users:
+                raise HTTPException(
+                    detail="You didn't share this post.", status_code=HTTP_409_CONFLICT
+                )
+            db_post.shared_by_users.remove(db_user)
+            db_session.add(db_post)
+            await db_session.commit()
+
+            delete_statement = posts_shared_association.delete().where(
+                and_(
+                    posts_shared_association.c.shared_by == db_user.id,
+                    posts_shared_association.c.shared_post == db_post.id,
+                )
+            )
+            await db_session.execute(delete_statement)
+            await db_session.commit()
+            with RabbitMQConnection() as conn:
+                conn.publish_message('share_post', data_for_rabbit)
+
+        return {'return': True}

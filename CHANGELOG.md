@@ -1,3 +1,6 @@
+DP 22.11.2023
+- Added Post sharing functionality
+
 DP 21.11.2023
 - Added JWT authentication middleware
 - Refactored controllers to use User object from JWT payload

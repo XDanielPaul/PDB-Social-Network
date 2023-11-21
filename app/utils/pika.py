@@ -5,7 +5,12 @@ import pika
 from pika.adapters.blocking_connection import BlockingChannel
 
 from .mongo.collections import mongo_collections
-from .mongo.custom_methods import add_comment_to_post, add_tags_to_post
+from .mongo.custom_methods import (
+    add_comment_to_post,
+    add_tags_to_post,
+    remove_share_post_by_user,
+    share_post_by_user,
+)
 
 
 class PikaException(Exception):
@@ -99,7 +104,6 @@ def handle_tags_callback(ch, method, properties, body):
             print(f' [x] Added tags to post {message["post_id"]} - {message["tags"]} {status[res]}')
 
 
-
 def handle_comments_callback(ch, method, properties, body):
     message = json.loads(json.loads(body))
     match message['method']:
@@ -107,6 +111,21 @@ def handle_comments_callback(ch, method, properties, body):
             res = add_comment_to_post(message['post_id'], message['comment_id'])
             print(
                 f' [x] Added comment to post {message["post_id"]} - {message["comment_id"]} {status[res]}'
+            )
+
+
+def handle_share_post_callback(ch, method, properties, body):
+    message = json.loads(json.loads(body))
+    match message['method']:
+        case 'ADD':
+            res = share_post_by_user(message['post_id'], message['user_id'])
+            print(
+                f' [x] Added post share by user {message["post_id"]} - {message["user_id"]} {status[res]}'
+            )
+        case 'REMOVE':
+            res = remove_share_post_by_user(message['post_id'], message['user_id'])
+            print(
+                f' [x] Removed post share by post {message["post_id"]} - {message["user_id"]} {status[res]}'
             )
 
 
@@ -119,4 +138,5 @@ queues_with_callbacks: dict[str, Callable[..., None]] = {
     'crud_operations': handle_crud_callback,
     'tags': handle_tags_callback,
     'comments': handle_comments_callback,
+    'share_post': handle_share_post_callback,
 }

@@ -67,13 +67,12 @@ class UserController(Controller):
     async def create_user(
         self, data: DTOData[UserCreateModel], db_session: AsyncSession
     ) -> UserReturn:
-        
         user_to_create = data.create_instance().model_dump()
-        
+
         check_if_exists = await db_session.execute(
             select(User).filter(User.username == user_to_create['username'])
         )
-        
+
         print(user_to_create)
         if check_if_exists.scalars().first():
             raise HTTPException(
@@ -125,6 +124,7 @@ class UserController(Controller):
             select(User).where(User.username == user_to_login['username'])
         )
         db_user = result.scalar_one_or_none()
+
         if not db_user:
             raise HTTPException(
                 detail="User with this username doesn't exist.", status_code=HTTP_404_NOT_FOUND

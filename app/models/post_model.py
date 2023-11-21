@@ -34,7 +34,7 @@ class Post(UUIDAuditBase):
     created_by = relationship("User", back_populates="posts")
 
     shared_by_users = relationship(
-        'User', secondary=posts_shared_association, back_populates='shared_posts'
+        'User', secondary=posts_shared_association, back_populates='shared_posts', lazy='joined'
     )
     comments = relationship('Comment', back_populates="on_post", lazy='joined')
 
@@ -54,10 +54,10 @@ class Post(UUIDAuditBase):
             'likes_dislikes': [],
             'tags': [],
         }
+
     def to_dict_delete(self):
-        return { 
-            '_id' : str(self.id)
-        }
+        return {'_id': str(self.id)}
+
     def format_for_rabbit(self, method):
         message = {'model': self.__tablename__, 'method': method}
         match method:
@@ -65,7 +65,7 @@ class Post(UUIDAuditBase):
                 message['data'] = self.to_dict_create()
             case 'DELETE':
                 message['data'] = self.to_dict_delete()
-        
+
         return json.dumps(message)
 
 
@@ -93,20 +93,25 @@ class PostReturnModel(PostCreate):
 class PartialPostReturnDto(PydanticDTO[PostReturnModel]):
     config = DTOConfig(partial=True)
 
+
 class PostLikeDislike(BaseModel):
     post_id: UUID4
     like: bool
 
+
 class PostLikeDislikeDto(PydanticDTO[PostLikeDislike]):
     config = DTOConfig(partial=True)
 
+
 class LikeDislikeModel(BaseModel):
-    user_id : UUID4
-    post_id : UUID4
-    review_type : bool
+    user_id: UUID4
+    post_id: UUID4
+    review_type: bool
+
 
 class LikeDislikeDeleteModel(BaseModel):
-    post_id : str
+    post_id: str
+
 
 class LikeDislikeDeleteModelDto(PydanticDTO[LikeDislikeDeleteModel]):
     config = DTOConfig(partial=True)
