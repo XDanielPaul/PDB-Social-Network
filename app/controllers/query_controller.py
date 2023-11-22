@@ -13,6 +13,8 @@ except Exception as e:
 mongo_db = client["social_db"]
 
 
+
+
 @get("/")
 async def hello_world() -> str:
     return "Hello, Query!"

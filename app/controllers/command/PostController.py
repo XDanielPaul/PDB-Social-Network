@@ -199,7 +199,7 @@ class PostController(Controller):
 
         if not db_user:
             raise HTTPException(
-                detail="User which creates the post doesnt exist.",
+                detail="User which submits the follow of the post doesnt exist.",
                 status_code=HTTP_404_NOT_FOUND,
             )
 
@@ -225,28 +225,21 @@ class PostController(Controller):
                 raise HTTPException(
                     detail="You already shared this post.", status_code=HTTP_409_CONFLICT
                 )
-
-            db_post.shared_by_users.append(db_user)
-            db_session.add(db_post)
+            insert_statement = posts_shared_association.insert().values(
+                {'shared_by': db_user.id, 'shared_post': db_post.id}
+            )
+            await db_session.execute(insert_statement)
             await db_session.commit()
 
             with RabbitMQConnection() as conn:
                 conn.publish_message('share_post', data_for_rabbit)
 
-            insert_statement = posts_shared_association.insert().values(
-                {'shared_by': db_user.id, 'shared_post': db_post.id}
-            )
 
-            await db_session.execute(insert_statement)
-            await db_session.commit()
         else:
             if db_user not in db_post.shared_by_users:
                 raise HTTPException(
                     detail="You didn't share this post.", status_code=HTTP_409_CONFLICT
                 )
-            db_post.shared_by_users.remove(db_user)
-            db_session.add(db_post)
-            await db_session.commit()
 
             delete_statement = posts_shared_association.delete().where(
                 and_(
