@@ -68,7 +68,7 @@ class User(UUIDBase):
             'followers': [],
             'follows': [],
             'shared_posts': [],
-            'arrtending_events': [],
+            'attending_events': [],
         }
 
     def to_dict_update(self):

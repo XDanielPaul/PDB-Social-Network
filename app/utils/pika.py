@@ -56,7 +56,26 @@ class RabbitMQConnection:
         else:
             raise PikaException("Cannot publish message from reciever connection.")
 
+    def on_publish_confirm(self,frame,callback):
+        if frame.method.NAME == 'Basic.Ack':
+            print("Message was delivered successfully")
+            callback()
+        elif frame.method.NAME == 'Basic.Nack':
+            raise PikaException("Message delivery failed.")
+    def publish_message_with_ack(self, queue, message, callback_function) -> None:
+        if not self.reciever:
+            self.channel.confirm_delivery(lambda frame: self.on_publish_confirm(frame,callback_function))
+            properties = pika.BasicProperties(content_type='application/json',delivery_mode=1)
+            self.channel.basic_publish(
+                exchange='',
+                routing_key=queue,
+                body=json.dumps(message),
+                properties=properties,
+                mandatory=True
+            )
 
+        else:
+            raise PikaException('Cannot publish message from receiver connection.')
 # ---------------------------------------------------------
 # Callbacks
 # ---------------------------------------------------------
