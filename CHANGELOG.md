@@ -1,6 +1,7 @@
 DP 22.11.2023
 - Added Post sharing functionality
 - Added User follow functionality
+- Added User and Post controllers to query for GET requests
 
 - Refactored Post sharing
 

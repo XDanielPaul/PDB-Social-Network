@@ -1,6 +1,9 @@
 import motor.motor_asyncio as motor
 from litestar import Litestar, get
 
+from app.controllers.query.PostController import PostController
+from app.controllers.query.UserController import UserController
+
 local_connection_string = ""
 
 client = motor.AsyncIOMotorClient("mongodb://admin:admin@127.0.0.1:27017/")
@@ -13,11 +16,9 @@ except Exception as e:
 mongo_db = client["social_db"]
 
 
-
-
 @get("/")
 async def hello_world() -> str:
     return "Hello, Query!"
 
 
-app = Litestar([hello_world])
+app = Litestar([hello_world, UserController, PostController])
