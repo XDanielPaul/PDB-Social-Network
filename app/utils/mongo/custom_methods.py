@@ -2,8 +2,6 @@ from .collections import *
 
 
 def add_comment_to_post(post_id, comment_id):
-    print("POST ID:", post_id)
-    print("COMMENT ID: ", comment_id)
     post_from_db = post_collection.find_document({'_id': post_id})
     if not post_from_db:
         return False
@@ -12,9 +10,57 @@ def add_comment_to_post(post_id, comment_id):
     return result
 
 
+def remove_comment_from_post(post_id, comment_id):
+    post_from_db = post_collection.find_document({'_id': post_id})
+    if not post_from_db:
+        return False
+    try:
+        post_from_db['comments'].remove(comment_id)
+    except:
+        return False
+    result = post_collection.update_document(post_id, {'comments': post_from_db['comments']})
+    return result
+
+
+def follow_user(follower_id, followed_id):
+    follower_from_db = user_collection.find_document({'_id': follower_id})
+    followed_from_db = user_collection.find_document({'_id': followed_id})
+    if not follower_from_db or not followed_from_db:
+        return False
+    follower_from_db['follows'].append(followed_id)
+    followed_from_db['followers'].append(follower_id)
+    follower_result = user_collection.update_document(
+        follower_id, {'follows': follower_from_db['follows']}
+    )
+    followed_result = user_collection.update_document(
+        followed_id, {'followers': followed_from_db['followers']}
+    )
+    return follower_result and followed_result
+
+
+def remove_follow_user(follower_id, followed_id):
+    follower_from_db = user_collection.find_document({'_id': follower_id})
+    followed_from_db = user_collection.find_document({'_id': followed_id})
+    if not follower_from_db or not followed_from_db:
+        return False
+    try:
+        follower_from_db['follows'].remove(followed_id)
+    except:
+        return False
+    try:
+        followed_from_db['followers'].remove(follower_id)
+    except:
+        return False
+    follower_result = user_collection.update_document(
+        follower_id, {'follows': follower_from_db['follows']}
+    )
+    followed_result = user_collection.update_document(
+        followed_id, {'followers': followed_from_db['followers']}
+    )
+    return follower_result and followed_result
+
+
 def add_tags_to_post(post_id, tags):
-    print("POST ID:", post_id)
-    print("TAGS: ", tags)
     post_from_db = post_collection.find_document({'_id': post_id})
     for tag in tags:
         tag_from_mongo = tag_collection.find_document({'_id': tag['_id']})

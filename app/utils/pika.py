@@ -8,6 +8,9 @@ from .mongo.collections import mongo_collections
 from .mongo.custom_methods import (
     add_comment_to_post,
     add_tags_to_post,
+    follow_user,
+    remove_comment_from_post,
+    remove_follow_user,
     remove_share_post_by_user,
     share_post_by_user,
 )
@@ -56,26 +59,31 @@ class RabbitMQConnection:
         else:
             raise PikaException("Cannot publish message from reciever connection.")
 
-    def on_publish_confirm(self,frame,callback):
+    def on_publish_confirm(self, frame, callback):
         if frame.method.NAME == 'Basic.Ack':
             print("Message was delivered successfully")
             callback()
         elif frame.method.NAME == 'Basic.Nack':
             raise PikaException("Message delivery failed.")
+
     def publish_message_with_ack(self, queue, message, callback_function) -> None:
         if not self.reciever:
-            self.channel.confirm_delivery(lambda frame: self.on_publish_confirm(frame,callback_function))
-            properties = pika.BasicProperties(content_type='application/json',delivery_mode=1)
+            self.channel.confirm_delivery(
+                lambda frame: self.on_publish_confirm(frame, callback_function)
+            )
+            properties = pika.BasicProperties(content_type='application/json', delivery_mode=1)
             self.channel.basic_publish(
                 exchange='',
                 routing_key=queue,
                 body=json.dumps(message),
                 properties=properties,
-                mandatory=True
+                mandatory=True,
             )
 
         else:
             raise PikaException('Cannot publish message from receiver connection.')
+
+
 # ---------------------------------------------------------
 # Callbacks
 # ---------------------------------------------------------
@@ -131,6 +139,11 @@ def handle_comments_callback(ch, method, properties, body):
             print(
                 f' [x] Added comment to post {message["post_id"]} - {message["comment_id"]} {status[res]}'
             )
+        case 'REMOVE':
+            res = remove_comment_from_post(message['post_id'], message['comment_id'])
+            print(
+                f' [x] Added comment to post {message["post_id"]} - {message["comment_id"]} {status[res]}'
+            )
 
 
 def handle_share_post_callback(ch, method, properties, body):
@@ -148,6 +161,22 @@ def handle_share_post_callback(ch, method, properties, body):
             )
 
 
+def handle_follow_user_callback(ch, method, properties, body):
+    message = json.loads(json.loads(body))
+    match message['method']:
+        case 'ADD':
+            print(message)
+            res = follow_user(message['follower_id'], message['followed_id'])
+            print(
+                f' [x] Added follow from user {message["follower_id"]} to user {message["followed_id"]} {status[res]}'
+            )
+        case 'REMOVE':
+            res = remove_follow_user(message['follower_id'], message['followed_id'])
+            print(
+                f' [x] Removed follow from user {message["follower_id"]} to user {message["followed_id"]} {status[res]}'
+            )
+
+
 # ---------------------------------------------------------
 # Queues
 # ---------------------------------------------------------
@@ -158,4 +187,5 @@ queues_with_callbacks: dict[str, Callable[..., None]] = {
     'tags': handle_tags_callback,
     'comments': handle_comments_callback,
     'share_post': handle_share_post_callback,
+    'follow_user': handle_follow_user_callback,
 }

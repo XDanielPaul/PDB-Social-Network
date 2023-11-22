@@ -118,10 +118,18 @@ class CommentController(Controller):
                 status_code=HTTP_409_CONFLICT,
             )
 
+        db_post = await db_session.get(Post, db_comment.on_post_id)
+
         await db_session.delete(db_comment)
         await db_session.commit()
 
+        # Data for rabbitMQ regarding the comment and the post relation
+        data_for_rabbit = json.dumps(
+            {'post_id': str(db_post.id), 'comment_id': str(db_comment.id), 'method': 'REMOVE'}
+        )
+
         with RabbitMQConnection() as conn:
             conn.publish_message('crud_operations', db_comment.format_for_rabbit('DELETE'))
+            conn.publish_message('comments', data_for_rabbit)
 
         return DeleteConfirm(deleted=True, message=f"Comment with id {id} was deleted.")

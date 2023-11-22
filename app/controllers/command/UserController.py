@@ -2,14 +2,14 @@ import json
 from typing import Any, Optional
 from uuid import UUID
 
-from litestar import Response, delete, get, post, put
+from litestar import Request, Response, delete, get, post, put
 from litestar.connection import ASGIConnection
 from litestar.contrib.jwt import JWTAuth, Token
 from litestar.controller import Controller
 from litestar.dto import DTOData
 from litestar.exceptions import HTTPException
 from litestar.status_codes import HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
-from sqlalchemy import select
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.base_for_modelling import DeleteConfirm
@@ -21,6 +21,7 @@ from app.models.user_model import (
     UserLogin,
     UserReturn,
     UserReturnDto,
+    user_followers_association,
 )
 from app.utils.pika import RabbitMQConnection
 
@@ -137,3 +138,58 @@ class UserController(Controller):
             send_token_as_response_body=True,
         )
         return response
+
+    @post(path="/follow/{id:uuid}", tags=["User"])
+    async def follow_user(
+        self, request: Request[User, Token, Any], id: UUID, follow: bool, db_session: AsyncSession
+    ) -> dict:
+        user_to_follow = await db_session.get(User, id)
+        if not user_to_follow:
+            raise HTTPException(
+                detail="User with this id doesn't exist.", status_code=HTTP_404_NOT_FOUND
+            )
+
+        if user_to_follow.id == request.auth.sub:
+            raise HTTPException(detail="You cannot follow yourself.", status_code=HTTP_409_CONFLICT)
+
+        check_if_following = await db_session.execute(
+            select(user_followers_association)
+            .filter(user_followers_association.c.follower_id == request.auth.sub)
+            .filter(user_followers_association.c.followed_id == user_to_follow.id)
+        )
+        if follow:
+            if bool(check_if_following.scalars().first()):
+                raise HTTPException(
+                    detail="You are already following this user.", status_code=HTTP_409_CONFLICT
+                )
+
+            insert_statement = user_followers_association.insert().values(
+                {'follower_id': request.auth.sub, 'followed_id': user_to_follow.id}
+            )
+            await db_session.execute(insert_statement)
+            await db_session.commit()
+        else:
+            if not bool(check_if_following.scalars().first()):
+                raise HTTPException(
+                    detail="You are not following the user.", status_code=HTTP_409_CONFLICT
+                )
+            delete_statement = user_followers_association.delete().where(
+                and_(
+                    user_followers_association.c.follower_id == request.auth.sub,
+                    user_followers_association.c.followed_id == user_to_follow.id,
+                )
+            )
+            await db_session.execute(delete_statement)
+            await db_session.commit()
+
+        data_for_rabbit = json.dumps(
+            {
+                'follower_id': str(request.auth.sub),
+                'followed_id': str(user_to_follow.id),
+                'method': 'ADD' if follow else 'REMOVE',
+            }
+        )
+        with RabbitMQConnection() as conn:
+            conn.publish_message('follow_user', data_for_rabbit)
+
+        return {"message": True}
