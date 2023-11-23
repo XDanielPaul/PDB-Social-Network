@@ -1,6 +1,11 @@
 from typing import Annotated
+<<<<<<< HEAD
 from uuid import UUID
 from litestar.contrib.sqlalchemy.base import UUIDAuditBase, UUIDBase
+=======
+
+from litestar.contrib.sqlalchemy.base import UUIDBase
+>>>>>>> main
 from litestar.contrib.sqlalchemy.dto import SQLAlchemyDTO
 from litestar.dto import DTOConfig
 from litestar.contrib.sqlalchemy.repository import SQLAlchemyAsyncRepository

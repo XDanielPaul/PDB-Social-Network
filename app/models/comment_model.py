@@ -26,12 +26,15 @@ class Comment(UUIDAuditBase):
             'content': self.content,
             'created_by_id': str(self.created_by_id),
             'on_post_id': str(self.on_post_id),
+            'created_at': self.created_at,
+            'updated_at': self.updated_at,
         }
 
     def to_dict_update(self):
         return {
             '_id': str(self.id),
             'content': self.content,
+            'updated_at': self.updated_at,
         }
 
     def to_dict_delete(self):
