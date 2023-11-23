@@ -106,7 +106,7 @@ class PostController(Controller):
     async def delete_post(
         self, request: Request[User, Token, Any], post_id: UUID, db_session: AsyncSession
     ) -> DeleteConfirm:
-        db_request = await db_session.execute(select(Post).options(selectinload(Post.tagged)))
+        db_request = await db_session.execute(select(Post).filter(Post.id == post_id).options(selectinload(Post.tagged)))
         post = db_request.scalars().first()
         tags: list[Tag] = post.tagged
         if post.created_by_id == request.auth.sub:
