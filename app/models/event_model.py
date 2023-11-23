@@ -9,6 +9,8 @@ from litestar.contrib.pydantic import PydanticDTO
 from pydantic import BaseModel
 from datetime import datetime
 from uuid import UUID
+import json
+
 event_attending_associations = Table(
     'event_attending',
     UUIDBase.metadata,
@@ -32,9 +34,34 @@ class Event(UUIDBase):
         'User', secondary=event_attending_associations, back_populates='attending_events'
     )
 
+    def to_dict_create(self):
+        return {
+            '_id':str(self.id),
+            'name' :  self.name,
+            'description' : self.description,
+            'event_pict' : self.event_pict,
+            'capacity' :  self.capacity,
+            'event_datetime'  :  self.event_datetime,
+            'created_event_id' : str(self.created_event_id),
+        }
+
+    def to_dict_delete(self):
+        return {
+            '_id':str(self.id)
+        }
+    def format_for_rabbit(self, method):
+        message = {'model': self.__tablename__, 'method': method}
+        match method:
+            case 'CREATE':
+                message['data'] = self.to_dict_create()
+            case 'DELETE':
+                message['data'] = self.to_dict_delete()
+
+        return json.dumps(message,default=str)
+
 
 class EventCreate(BaseModel):
-    title: str
+    name: str
     description: str
     capacity: int
     event_datetime: datetime
@@ -48,3 +75,9 @@ class EventCreateDto(PydanticDTO[EventCreate]):
 class EventModel(EventCreate):
     id: UUID
     event_pict: str
+    created_event_id: UUID
+
+class AttendConfirm(BaseModel):
+    event_id : UUID
+    current_capacity_left : int
+    result : bool

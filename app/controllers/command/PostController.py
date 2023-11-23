@@ -33,7 +33,7 @@ from app.models.post_model import (
     PostLikeDislike,
     PostLikeDislikeDto,
     PostReturnModel,
-    posts_shared_association,
+    posts_shared_association,TagInPost
 )
 from app.models.tag_model import Tag, tags_posts_associations
 from app.models.user_model import User
@@ -49,7 +49,7 @@ class PostController(Controller):
         request: Request[User, Token, Any],
         data: DTOData[PostCreate],
         db_session: AsyncSession,
-    ) -> dict:
+    ) -> PostReturnModel:
         data_dct = data.create_instance()
         db_user = await db_session.get(User, request.auth.sub)
 
@@ -91,12 +91,16 @@ class PostController(Controller):
             )
             await db_session.execute(insert_statement)
         await db_session.commit()
-        print(data_for_rabbit)
         with RabbitMQConnection() as conn:
             conn.publish_message('crud_operations', db_post.format_for_rabbit('CREATE'))
             conn.publish_message('tags', data_for_rabbit)
 
-        return {'return': True}
+        return PostReturnModel(
+            title=db_post.title,
+            content=db_post.content,
+            tags=[TagInPost(name=tag.name) for tag in tags_from_db],
+            id=db_post.id
+        )
 
     @delete('/{post_id:uuid}', tags=["Posts"], status_code=200)
     async def delete_post(

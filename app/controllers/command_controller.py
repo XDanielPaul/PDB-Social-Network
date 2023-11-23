@@ -14,6 +14,7 @@ from app.controllers.command.CommentController import CommentController
 from app.controllers.command.PostController import PostController
 from app.controllers.command.TagController import TagController
 from app.controllers.command.UserController import UserController, jwt_auth
+from app.controllers.command.EventController import EventController
 from app.models.user_model import User
 from app.utils.pika import RabbitMQConnection
 
