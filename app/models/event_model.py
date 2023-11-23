@@ -1,11 +1,5 @@
 from typing import Annotated
-<<<<<<< HEAD
-from uuid import UUID
-from litestar.contrib.sqlalchemy.base import UUIDAuditBase, UUIDBase
-=======
-
 from litestar.contrib.sqlalchemy.base import UUIDBase
->>>>>>> main
 from litestar.contrib.sqlalchemy.dto import SQLAlchemyDTO
 from litestar.dto import DTOConfig
 from litestar.contrib.sqlalchemy.repository import SQLAlchemyAsyncRepository
@@ -14,7 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from litestar.contrib.pydantic import PydanticDTO
 from pydantic import BaseModel
 from datetime import datetime
-
+from uuid import UUID
 event_attending_associations = Table(
     'event_attending',
     UUIDBase.metadata,
