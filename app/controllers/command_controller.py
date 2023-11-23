@@ -50,7 +50,7 @@ async def on_startup(app: Litestar) -> None:
 
 
 openapi_config = OpenAPIConfig(
-    title="My API",
+    title="Command API",
     version="1.0.0",
 )
 

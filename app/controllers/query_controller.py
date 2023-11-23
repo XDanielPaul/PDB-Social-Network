@@ -1,8 +1,9 @@
 import motor.motor_asyncio as motor
 from litestar import Litestar, get
+from litestar.openapi.config import OpenAPIConfig
 
 from app.controllers.query.PostController import PostController
-from app.controllers.query.UserController import UserController
+from app.controllers.query.UserController import UserController, jwt_auth
 
 local_connection_string = ""
 
@@ -21,4 +22,13 @@ async def hello_world() -> str:
     return "Hello, Query!"
 
 
-app = Litestar([hello_world, UserController, PostController])
+openapi_config = OpenAPIConfig(
+    title="Query API",
+    version="1.0.0",
+)
+
+app = Litestar(
+    route_handlers=[hello_world, UserController, PostController],
+    on_app_init=[jwt_auth.on_app_init],
+    openapi_config=openapi_config,
+)

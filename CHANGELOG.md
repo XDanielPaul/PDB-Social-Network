@@ -1,3 +1,7 @@
+DP 23.11.2023
+- Added JWT authentication middleware for query
+- Added feed and customized logged user endpoints
+
 DP 22.11.2023
 - Added Post sharing functionality
 - Added User follow functionality
