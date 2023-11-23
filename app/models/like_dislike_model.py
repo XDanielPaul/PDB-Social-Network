@@ -1,6 +1,7 @@
+import json
 from typing import Annotated
 
-from litestar.contrib.sqlalchemy.base import UUIDAuditBase, UUIDBase
+from litestar.contrib.sqlalchemy.base import UUIDBase
 from litestar.contrib.sqlalchemy.dto import SQLAlchemyDTO
 from litestar.contrib.sqlalchemy.repository import SQLAlchemyAsyncRepository
 from litestar.dto import DTOConfig
@@ -8,7 +9,7 @@ from sqlalchemy import Column, ForeignKey, Table
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .post_model import posts_shared_association
-import json
+
 
 class LikeDislike(UUIDBase):
     __tablename__ = 'like_dislike'
@@ -20,21 +21,21 @@ class LikeDislike(UUIDBase):
     reviewed_on_id = Column(ForeignKey('posts.id'))
     reviewed_on = relationship("Post", back_populates="likes_dislikes")
 
-
-
     def to_dict_create(self):
         return {
-            '_id' : str(self.reviewed_by_id) + '@' + str(self.reviewed_on_id),
+            '_id': str(self.reviewed_by_id) + '@' + str(self.reviewed_on_id),
             'reviewed_by_id': str(self.reviewed_by_id),
             'reviewed_on_id': str(self.reviewed_on_id),
-            'type' : self.review_type
+            'type': self.review_type,
         }
+
     def to_dict_delete(self):
         return {
-            '_id' : str(self.reviewed_by_id) + '@' + str(self.reviewed_on_id),
+            '_id': str(self.reviewed_by_id) + '@' + str(self.reviewed_on_id),
         }
+
     def format_for_rabbit(self, method):
-        message = {'model':self.__tablename__,'method':method}
+        message = {'model': self.__tablename__, 'method': method}
         match method:
             case 'CREATE':
                 message['data'] = self.to_dict_create()

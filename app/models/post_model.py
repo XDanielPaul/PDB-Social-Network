@@ -1,18 +1,11 @@
 import json
-import os
-import sys
-from datetime import date
-from typing import Annotated
 
 from litestar.contrib.pydantic import PydanticDTO
 from litestar.contrib.sqlalchemy.base import UUIDAuditBase, UUIDBase
-from litestar.contrib.sqlalchemy.dto import SQLAlchemyDTO
-from litestar.contrib.sqlalchemy.repository import SQLAlchemyAsyncRepository
-from litestar.dto import DTOConfig, DTOData, Mark, dto_field
+from litestar.dto import DTOConfig
 from pydantic import UUID4, BaseModel
-from sqlalchemy import Column, ForeignKey, String, Table, select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Mapped, mapped_column, relationship, selectinload
+from sqlalchemy import Column, ForeignKey, String, Table
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .tag_model import tags_posts_associations
 
@@ -53,6 +46,8 @@ class Post(UUIDAuditBase):
             'shared_by_users': [],
             'likes_dislikes': [],
             'tags': [],
+            'created_at': self.created_at,
+            'updated_at': self.updated_at,
         }
 
     def to_dict_delete(self):

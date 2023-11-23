@@ -3,12 +3,11 @@ from typing import Annotated
 from uuid import UUID
 
 from litestar.contrib.pydantic import PydanticDTO
-from litestar.contrib.sqlalchemy.base import UUIDAuditBase, UUIDBase
+from litestar.contrib.sqlalchemy.base import UUIDBase
 from litestar.contrib.sqlalchemy.dto import SQLAlchemyDTO
-from litestar.contrib.sqlalchemy.repository import SQLAlchemyAsyncRepository
-from litestar.dto import DTOConfig, DTOData
+from litestar.dto import DTOConfig
 from sqlalchemy import Column, ForeignKey, Table
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, relationship
 
 from .base_for_modelling import BaseModel
 from .event_model import event_attending_associations

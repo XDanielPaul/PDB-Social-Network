@@ -2,7 +2,7 @@ from typing import Any
 
 from litestar import Litestar, Request, Response, get
 from litestar.contrib.jwt import Token
-from litestar.contrib.sqlalchemy.base import UUIDAuditBase, UUIDBase
+from litestar.contrib.sqlalchemy.base import UUIDBase
 from litestar.contrib.sqlalchemy.plugins.init import SQLAlchemyInitPlugin
 from litestar.contrib.sqlalchemy.plugins.init.config import (
     AsyncSessionConfig,
