@@ -1,6 +1,6 @@
 from typing import Any
 
-from litestar import Litestar, Request, Response, get
+from litestar import Litestar, Request, get
 from litestar.contrib.jwt import Token
 from litestar.contrib.sqlalchemy.base import UUIDBase
 from litestar.contrib.sqlalchemy.plugins.init import SQLAlchemyInitPlugin
@@ -8,18 +8,12 @@ from litestar.contrib.sqlalchemy.plugins.init.config import (
     AsyncSessionConfig,
     SQLAlchemyAsyncConfig,
 )
-from litestar.exceptions import HTTPException
 from litestar.openapi.config import OpenAPIConfig
 
 from app.controllers.command.CommentController import CommentController
 from app.controllers.command.PostController import PostController
 from app.controllers.command.TagController import TagController
 from app.controllers.command.UserController import UserController, jwt_auth
-from app.models.comment_model import Comment
-from app.models.event_model import Event
-from app.models.like_dislike_model import LikeDislike
-from app.models.post_model import Post
-from app.models.tag_model import Tag
 from app.models.user_model import User
 from app.utils.pika import RabbitMQConnection
 

@@ -3,6 +3,8 @@ DP 23.11.2023
 - Added feed and customized logged user endpoints
 - Added UUIDAuditBase parameters to RabbitMQ messaging for Mongo
 
+- Removed some unused imports and dead code
+
 DP 22.11.2023
 - Added Post sharing functionality
 - Added User follow functionality
