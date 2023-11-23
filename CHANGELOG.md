@@ -1,9 +1,15 @@
 DP 22.11.2023
 - Added Post sharing functionality
+- Added User follow functionality
+- Added User and Post controllers to query for GET requests
+
+- Refactored Post sharing
 
 DP 21.11.2023
 - Added JWT authentication middleware
+
 - Refactored controllers to use User object from JWT payload
+
 - Changed DTOs to no longer require user_id field
 - Created Login endpoint
 

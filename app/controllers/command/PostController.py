@@ -211,14 +211,6 @@ class PostController(Controller):
                 status_code=HTTP_404_NOT_FOUND,
             )
 
-        data_for_rabbit = json.dumps(
-            {
-                'post_id': str(db_post.id),
-                'user_id': str(db_user.id),
-                'method': 'ADD' if share else 'REMOVE',
-            }
-        )
-
         if share:
             # Check if user already shared this post
             if db_user in db_post.shared_by_users:
@@ -230,10 +222,6 @@ class PostController(Controller):
             )
             await db_session.execute(insert_statement)
             await db_session.commit()
-
-            with RabbitMQConnection() as conn:
-                conn.publish_message('share_post', data_for_rabbit)
-
 
         else:
             if db_user not in db_post.shared_by_users:
@@ -249,7 +237,16 @@ class PostController(Controller):
             )
             await db_session.execute(delete_statement)
             await db_session.commit()
-            with RabbitMQConnection() as conn:
-                conn.publish_message('share_post', data_for_rabbit)
+
+        data_for_rabbit = json.dumps(
+            {
+                'post_id': str(db_post.id),
+                'user_id': str(db_user.id),
+                'method': 'ADD' if share else 'REMOVE',
+            }
+        )
+
+        with RabbitMQConnection() as conn:
+            conn.publish_message('share_post', data_for_rabbit)
 
         return {'return': True}
