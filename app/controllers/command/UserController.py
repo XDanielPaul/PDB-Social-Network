@@ -97,8 +97,8 @@ class UserController(Controller):
                 detail="User with this id doesn't exist.", status_code=HTTP_404_NOT_FOUND
             )
         db_user.username = data_dct.get('username', db_user.username)
-        db_user.profile_picture = data_dct.get('username', db_user.profile_picture)
-        db_user.profile_bio = data_dct.get('username', db_user.profile_bio)
+        db_user.profile_picture = data_dct.get('profile_picture', db_user.profile_picture)
+        db_user.profile_bio = data_dct.get('profile_bio', db_user.profile_bio)
         await db_session.commit()
         await db_session.refresh(db_user)
         return UserReturn(**(db_user.to_dict()))

@@ -15,6 +15,7 @@ from app.controllers.command.CommentController import CommentController
 from app.controllers.command.PostController import PostController
 from app.controllers.command.TagController import TagController
 from app.controllers.command.UserController import UserController, jwt_auth
+from app.controllers.command.EventController import EventController
 from app.models.comment_model import Comment
 from app.models.event_model import Event
 from app.models.like_dislike_model import LikeDislike
@@ -45,7 +46,7 @@ sqlalchemy_plugin = SQLAlchemyInitPlugin(config=sqlalchemy_config)
 async def on_startup(app: Litestar) -> None:
     """Initializes the database."""
     async with app.state.db_engine.begin() as conn:
-        # await conn.run_sync(UUIDBase.metadata.drop_all) # <---- Uncomment this if you need to reset database
+        #await conn.run_sync(UUIDBase.metadata.drop_all) # <---- Uncomment this if you need to reset database
         await conn.run_sync(UUIDBase.metadata.create_all)
 
 
@@ -63,7 +64,7 @@ app = Litestar(
         UserController,
         TagController,
         PostController,
-        CommentController,
+        CommentController,EventController
     ],
     openapi_config=openapi_config,
 )
