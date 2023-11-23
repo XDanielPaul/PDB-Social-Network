@@ -91,10 +91,14 @@ class PostController(Controller):
             )
             await db_session.execute(insert_statement)
         await db_session.commit()
+        
+        
+
         with RabbitMQConnection() as conn:
             conn.publish_message('crud_operations', db_post.format_for_rabbit('CREATE'))
             conn.publish_message('tags', data_for_rabbit)
-
+    
+     
         return PostReturnModel(
             title=db_post.title,
             content=db_post.content,

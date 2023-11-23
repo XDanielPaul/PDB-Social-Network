@@ -61,7 +61,7 @@ class Post(UUIDAuditBase):
             case 'DELETE':
                 message['data'] = self.to_dict_delete()
 
-        return json.dumps(message)
+        return json.dumps(message,default=str)
 
 
 class TagInPost(BaseModel):
