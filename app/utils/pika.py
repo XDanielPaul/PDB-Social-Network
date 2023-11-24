@@ -13,6 +13,8 @@ from .mongo.custom_methods import (
     remove_follow_user,
     remove_share_post_by_user,
     share_post_by_user,
+    register_for_event,
+    leave_event
 )
 
 
@@ -66,11 +68,9 @@ class RabbitMQConnection:
         elif frame.method.NAME == 'Basic.Nack':
             raise PikaException("Message delivery failed.")
 
-    def publish_message_with_ack(self, queue, message, callback_function) -> None:
+    def publish_message_with_ack(self, queue, message) -> None:
         if not self.reciever:
-            self.channel.confirm_delivery(
-                lambda frame: self.on_publish_confirm(frame, callback_function)
-            )
+            self.channel.confirm_delivery()
             properties = pika.BasicProperties(content_type='application/json', delivery_mode=1)
             self.channel.basic_publish(
                 exchange='',
@@ -175,6 +175,20 @@ def handle_follow_user_callback(ch, method, properties, body):
             print(
                 f' [x] Removed follow from user {message["follower_id"]} to user {message["followed_id"]} {status[res]}'
             )
+def handle_events_callback(ch, method, properties, body):
+    message = json.loads(json.loads(body))
+    print("GOT HERE1")
+    match message['method']:
+        case 'REGISTER':
+            res =  register_for_event(message['user_id'],message['event_id'])
+            print(
+                f' [x]  Added user {message["user_id"]} to event {message["event_id"]} {status[res]}'
+            )
+        case 'LEAVE':
+            res =  leave_event(message['user_id'],message['event_id'])
+            print(
+                f' [x]  User {message["user_id"]} left {message["event_id"]} {status[res]}'
+            )
 
 
 # ---------------------------------------------------------
@@ -188,4 +202,5 @@ queues_with_callbacks: dict[str, Callable[..., None]] = {
     'comments': handle_comments_callback,
     'share_post': handle_share_post_callback,
     'follow_user': handle_follow_user_callback,
+    'events' : handle_events_callback
 }

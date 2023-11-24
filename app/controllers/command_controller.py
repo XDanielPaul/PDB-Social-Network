@@ -58,7 +58,8 @@ app = Litestar(
         UserController,
         TagController,
         PostController,
-        CommentController,EventController
+        CommentController,
+        EventController
     ],
     openapi_config=openapi_config,
 )

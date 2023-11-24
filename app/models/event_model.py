@@ -1,5 +1,5 @@
 from typing import Annotated
-from litestar.contrib.sqlalchemy.base import UUIDBase
+from litestar.contrib.sqlalchemy.base import UUIDBase,UUIDAuditBase
 from litestar.contrib.sqlalchemy.dto import SQLAlchemyDTO
 from litestar.dto import DTOConfig
 from litestar.contrib.sqlalchemy.repository import SQLAlchemyAsyncRepository
@@ -19,7 +19,7 @@ event_attending_associations = Table(
 )
 
 
-class Event(UUIDBase):
+class Event(UUIDAuditBase):
     __tablename__ = 'events'
 
     name: Mapped[str]
@@ -31,7 +31,7 @@ class Event(UUIDBase):
     created_event = relationship('User', back_populates='created_events')
 
     attending_users = relationship(
-        'User', secondary=event_attending_associations, back_populates='attending_events'
+        'User', secondary=event_attending_associations, back_populates='attending_events',
     )
 
     def to_dict_create(self):

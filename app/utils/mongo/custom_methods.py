@@ -1,5 +1,8 @@
 from .collections import *
 
+class PikaException(Exception):
+    def __init__(self, message):
+        super().__init__(message)
 
 def add_comment_to_post(post_id, comment_id):
     post_from_db = post_collection.find_document({'_id': post_id})
@@ -119,3 +122,21 @@ def remove_share_post_by_user(post_id, user_id):
         user_id, {'shared_posts': user_from_db['shared_posts']}
     )
     return post_result and user_result
+
+def register_for_event(user_id,event_id):
+    event_from_db = event_collection.find_document({'_id':event_id})
+    if not event_from_db:
+        raise PikaException("Event is not in the database.")
+    users = event_from_db.get('attending_users',[])
+    capacity = event_from_db.get('capacity',None)
+    if len(users) >= capacity:
+        raise PikaException("Event is full.")
+    users.append(user_id)
+    event_result = event_collection.update_document(event_id,{'attending_users':users})
+
+    return event_result
+
+def leave_event(user_id,  event_id):
+    update_query = {'$pull':{'attending_users':user_id}}
+    result = mongo_db.events.update_one({'_id':event_id},update_query)
+    return bool(result)

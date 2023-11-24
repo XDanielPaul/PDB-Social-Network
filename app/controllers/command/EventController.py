@@ -1,16 +1,33 @@
 from litestar.controller import Controller
 from litestar import post, Request, delete
-from app.models.event_model import Event, EventCreate, EventCreateDto, EventModel, AttendConfirm
+from app.models.event_model import (
+    Event,
+    EventCreate,
+    EventCreateDto,
+    EventModel,
+    AttendConfirm,
+    event_attending_associations,
+)
 from app.models.user_model import User
 from litestar.dto import DTOData
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Any
 from litestar.contrib.jwt import Token
 from litestar.exceptions import HTTPException
-from litestar.status_codes import HTTP_404_NOT_FOUND, HTTP_400_BAD_REQUEST, HTTP_401_UNAUTHORIZED
+from litestar.status_codes import (
+    HTTP_404_NOT_FOUND,
+    HTTP_400_BAD_REQUEST,
+    HTTP_401_UNAUTHORIZED,
+    HTTP_409_CONFLICT,
+    HTTP_500_INTERNAL_SERVER_ERROR
+)
 from app.utils.pika import RabbitMQConnection
 from app.models.base_for_modelling import DeleteConfirm
 from uuid import UUID
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
+import asyncio
+import json
 
 
 class EventController(Controller):
@@ -87,10 +104,86 @@ class EventController(Controller):
     async def attend_event(
         self, event_id: UUID, request: Request[User, Token, Any], db_session: AsyncSession
     ) -> AttendConfirm:
-        pass
+        user_db = await db_session.get(User, request.auth.sub)
+        if not user_db:
+            raise HTTPException(
+                detail="User submitting the request doesn't exist", status_code=HTTP_404_NOT_FOUND
+            )
+        # check if event exist
+        request_db = await db_session.execute(
+            select(Event).filter(Event.id == event_id).options(selectinload(Event.attending_users))
+        )
+        event_db = request_db.scalars().first()
+        if not event_db:
+            raise HTTPException(detail="Event doesn't exist.", status_code=HTTP_404_NOT_FOUND)
+        # check if user is not already in the event
+
+        check_user = user_db.id in [event_user.id for event_user in event_db.attending_users]
+        if check_user:
+            raise HTTPException(
+                detail="User is already registered to this event.", status_code=HTTP_409_CONFLICT
+            )
+
+        if (len(event_db.attending_users) + 1) > event_db.capacity:
+            raise HTTPException(
+                detail="There is no space for you in this event.", status_code=HTTP_409_CONFLICT
+            )
+                
+        try:
+            with RabbitMQConnection() as conn:
+                conn.publish_message_with_ack(
+                    'events',
+                    json.dumps({'method': 'REGISTER', 'user_id': str(user_db.id), 'event_id': str(event_db.id),'model':'events'}))
+            result = await db_session.execute(select(Event).filter(Event.id == event_id, Event.updated_at == event_db.updated_at))
+            print("#"*50)
+            result_db = result.scalars().first()
+            print(result_db)
+            print("#"*50)
+            if result_db:
+                db_request = event_attending_associations.insert().values(
+                    {'user_attending': user_db.id, 'on_event': event_db.id}
+                )
+                print(db_request)
+                await db_session.execute(db_request)
+                await db_session.commit()
+            else:
+                raise HTTPException(detail="There was a conflict in the registering",status_code=HTTP_409_CONFLICT)
+        except HTTPException as exception:
+            raise exception
+        except Exception as err:
+            print("#"*50,"\n",err,"\n","#"*50)
+            raise HTTPException(detail="Something went wrong when registering to event.",status_code=HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return AttendConfirm(
+            event_id=event_id,
+            current_capacity_left=(event_db.capacity-(len(event_db.attending_users) + 1)),
+            result=True
+        )
+        
 
     @post('/leave/{event_id:uuid}', tags=["Event"])
     async def leave_event(
         self, event_id: UUID, request: Request[User, Token, Any], db_session: AsyncSession
     ) -> AttendConfirm:
-        pass
+        user_db = await db_session.get(User, request.auth.sub)
+        if not user_db:
+            raise HTTPException(
+                detail="User submitting the request doesn't exist", status_code=HTTP_404_NOT_FOUND
+            )
+        db_request = await db_session.execute(select(Event).filter(Event.id == event_id).options(selectinload(Event.attending_users)))
+        event_db : Event = db_request.scalars().first()
+        if not event_db:
+            raise HTTPException(detail="Event doesn't exist.", status_code=HTTP_404_NOT_FOUND)
+
+        event_db.attending_users.remove(user_db)
+        await db_session.commit()
+
+        with RabbitMQConnection() as conn:
+            conn.publish_message('events',{'method':'LEAVE','model':'events','user_id':str(user_db.id),'event_id':str(event_id)})
+        
+        return AttendConfirm(
+            event_id=event_id,
+            current_capacity_left=event_db.capacity - len(event_db.attending_users),
+            result=True
+        )
+        
