@@ -74,7 +74,6 @@ class UserController(Controller):
             select(User).filter(User.username == user_to_create['username'])
         )
 
-        print(user_to_create)
         if check_if_exists.scalars().first():
             raise HTTPException(
                 detail="This user is already in the database.", status_code=HTTP_409_CONFLICT
@@ -192,4 +191,4 @@ class UserController(Controller):
         with RabbitMQConnection() as conn:
             conn.publish_message('follow_user', data_for_rabbit)
 
-        return {"message": True}
+        return {"followed": follow}

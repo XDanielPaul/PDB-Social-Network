@@ -1,3 +1,6 @@
+DP 26.11.2023
+- Added tests for User Controller
+
 DP 23.11.2023
 - Added JWT authentication middleware for query
 - Added feed and customized logged user endpoints

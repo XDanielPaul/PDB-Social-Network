@@ -11,10 +11,10 @@ from litestar.contrib.sqlalchemy.plugins.init.config import (
 from litestar.openapi.config import OpenAPIConfig
 
 from app.controllers.command.CommentController import CommentController
+from app.controllers.command.EventController import EventController
 from app.controllers.command.PostController import PostController
 from app.controllers.command.TagController import TagController
 from app.controllers.command.UserController import UserController, jwt_auth
-from app.controllers.command.EventController import EventController
 from app.models.user_model import User
 from app.utils.pika import RabbitMQConnection
 
@@ -40,7 +40,7 @@ sqlalchemy_plugin = SQLAlchemyInitPlugin(config=sqlalchemy_config)
 async def on_startup(app: Litestar) -> None:
     """Initializes the database."""
     async with app.state.db_engine.begin() as conn:
-        #await conn.run_sync(UUIDBase.metadata.drop_all) # <---- Uncomment this if you need to reset database
+        # await conn.run_sync(UUIDBase.metadata.drop_all) # <---- Uncomment this if you need to reset database
         await conn.run_sync(UUIDBase.metadata.create_all)
 
 
@@ -59,7 +59,7 @@ app = Litestar(
         TagController,
         PostController,
         CommentController,
-        EventController
+        EventController,
     ],
     openapi_config=openapi_config,
 )
