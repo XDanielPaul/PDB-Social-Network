@@ -33,7 +33,8 @@ from app.models.post_model import (
     PostLikeDislike,
     PostLikeDislikeDto,
     PostReturnModel,
-    posts_shared_association,TagInPost
+    posts_shared_association,
+    TagInPost,
 )
 from app.models.tag_model import Tag, tags_posts_associations
 from app.models.user_model import User
@@ -91,26 +92,25 @@ class PostController(Controller):
             )
             await db_session.execute(insert_statement)
         await db_session.commit()
-        
-        
 
         with RabbitMQConnection() as conn:
             conn.publish_message('crud_operations', db_post.format_for_rabbit('CREATE'))
             conn.publish_message('tags', data_for_rabbit)
-    
-     
+
         return PostReturnModel(
             title=db_post.title,
             content=db_post.content,
             tags=[TagInPost(name=tag.name) for tag in tags_from_db],
-            id=db_post.id
+            id=db_post.id,
         )
 
     @delete('/{post_id:uuid}', tags=["Posts"], status_code=200)
     async def delete_post(
         self, request: Request[User, Token, Any], post_id: UUID, db_session: AsyncSession
     ) -> DeleteConfirm:
-        db_request = await db_session.execute(select(Post).filter(Post.id == post_id).options(selectinload(Post.tagged)))
+        db_request = await db_session.execute(
+            select(Post).filter(Post.id == post_id).options(selectinload(Post.tagged))
+        )
         post = db_request.scalars().first()
         tags: list[Tag] = post.tagged
         if post.created_by_id == request.auth.sub:
@@ -186,7 +186,7 @@ class PostController(Controller):
 
         await db_session.delete(like_dislike_instance)
         await db_session.commit()
-        print(like_dislike_instance.format_for_rabbit('DELETE'))
+        # print(like_dislike_instance.format_for_rabbit('DELETE'))
 
         with RabbitMQConnection() as conn:
             conn.publish_message(

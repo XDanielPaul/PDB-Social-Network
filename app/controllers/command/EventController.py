@@ -19,7 +19,7 @@ from litestar.status_codes import (
     HTTP_400_BAD_REQUEST,
     HTTP_401_UNAUTHORIZED,
     HTTP_409_CONFLICT,
-    HTTP_500_INTERNAL_SERVER_ERROR
+    HTTP_500_INTERNAL_SERVER_ERROR,
 )
 from app.utils.pika import RabbitMQConnection
 from app.models.base_for_modelling import DeleteConfirm
@@ -128,17 +128,25 @@ class EventController(Controller):
             raise HTTPException(
                 detail="There is no space for you in this event.", status_code=HTTP_409_CONFLICT
             )
-                
+
         try:
             with RabbitMQConnection() as conn:
                 conn.publish_message_with_ack(
                     'events',
-                    json.dumps({'method': 'REGISTER', 'user_id': str(user_db.id), 'event_id': str(event_db.id),'model':'events'}))
-            result = await db_session.execute(select(Event).filter(Event.id == event_id, Event.updated_at == event_db.updated_at))
-            print("#"*50)
+                    json.dumps(
+                        {
+                            'method': 'REGISTER',
+                            'user_id': str(user_db.id),
+                            'event_id': str(event_db.id),
+                            'model': 'events',
+                        }
+                    ),
+                )
+            result = await db_session.execute(
+                select(Event).filter(Event.id == event_id, Event.updated_at == event_db.updated_at)
+            )
+
             result_db = result.scalars().first()
-            print(result_db)
-            print("#"*50)
             if result_db:
                 db_request = event_attending_associations.insert().values(
                     {'user_attending': user_db.id, 'on_event': event_db.id}
@@ -147,19 +155,23 @@ class EventController(Controller):
                 await db_session.execute(db_request)
                 await db_session.commit()
             else:
-                raise HTTPException(detail="There was a conflict in the registering",status_code=HTTP_409_CONFLICT)
+                raise HTTPException(
+                    detail="There was a conflict in the registering", status_code=HTTP_409_CONFLICT
+                )
         except HTTPException as exception:
             raise exception
         except Exception as err:
-            print("#"*50,"\n",err,"\n","#"*50)
-            raise HTTPException(detail="Something went wrong when registering to event.",status_code=HTTP_500_INTERNAL_SERVER_ERROR)
+            print("#" * 50, "\n", err, "\n", "#" * 50)
+            raise HTTPException(
+                detail="Something went wrong when registering to event.",
+                status_code=HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         return AttendConfirm(
             event_id=event_id,
-            current_capacity_left=(event_db.capacity-(len(event_db.attending_users) + 1)),
-            result=True
+            current_capacity_left=(event_db.capacity - (len(event_db.attending_users) + 1)),
+            result=True,
         )
-        
 
     @post('/leave/{event_id:uuid}', tags=["Event"])
     async def leave_event(
@@ -170,8 +182,10 @@ class EventController(Controller):
             raise HTTPException(
                 detail="User submitting the request doesn't exist", status_code=HTTP_404_NOT_FOUND
             )
-        db_request = await db_session.execute(select(Event).filter(Event.id == event_id).options(selectinload(Event.attending_users)))
-        event_db : Event = db_request.scalars().first()
+        db_request = await db_session.execute(
+            select(Event).filter(Event.id == event_id).options(selectinload(Event.attending_users))
+        )
+        event_db: Event = db_request.scalars().first()
         if not event_db:
             raise HTTPException(detail="Event doesn't exist.", status_code=HTTP_404_NOT_FOUND)
 
@@ -179,11 +193,18 @@ class EventController(Controller):
         await db_session.commit()
 
         with RabbitMQConnection() as conn:
-            conn.publish_message('events',{'method':'LEAVE','model':'events','user_id':str(user_db.id),'event_id':str(event_id)})
-        
+            conn.publish_message(
+                'events',
+                {
+                    'method': 'LEAVE',
+                    'model': 'events',
+                    'user_id': str(user_db.id),
+                    'event_id': str(event_id),
+                },
+            )
+
         return AttendConfirm(
             event_id=event_id,
             current_capacity_left=event_db.capacity - len(event_db.attending_users),
-            result=True
+            result=True,
         )
-        

@@ -1,0 +1,64 @@
+{
+    "users": [
+        {
+            "username": "TechExplorer42",
+            "password": "InnovateTech2023",
+            "profile_picture": "/path/to/profile1.jpg",
+            "profile_bio": "Adventurous techie exploring the digital universe."
+        },
+        {
+            "username": "CodeNinja_99",
+            "password": "SecretCodeMaster",
+            "profile_picture": "/path/to/profile2.jpg",
+            "profile_bio": "Coding wizard with a passion for elegant solutions."
+        },
+        {
+            "username": "WanderlustDreamer",
+            "password": "Traveler123",
+            "profile_picture": "/path/to/profile3.jpg",
+            "profile_bio": "Dreamer on a journey to explore every corner of the world."
+        },
+        {
+            "username": "GourmetGuru",
+            "password": "TasteTheWorld",
+            "profile_picture": "/path/to/profile4.jpg",
+            "profile_bio": "Connoisseur of fine dining and culinary adventures."
+        },
+        {
+            "username": "YogaZenMaster",
+            "password": "InnerPeace123",
+            "profile_picture": "/path/to/profile5.jpg",
+            "profile_bio": "Yoga enthusiast seeking harmony and balance in life."
+        },
+        {
+            "username": "StarGazer87",
+            "password": "CosmicExplorer",
+            "profile_picture": "/path/to/profile6.jpg",
+            "profile_bio": "Astronomy lover with eyes on the stars and beyond."
+        },
+        {
+            "username": "BookwormWriter",
+            "password": "NovelAdventures",
+            "profile_picture": "/path/to/profile7.jpg",
+            "profile_bio": "Bookworm by day, aspiring writer by night."
+        },
+        {
+            "username": "ArtisticSoul",
+            "password": "CreateDreams",
+            "profile_picture": "/path/to/profile8.jpg",
+            "profile_bio": "Expressing emotions through the strokes of a brush."
+        },
+        {
+            "username": "MusicMaestro",
+            "password": "Harmony123",
+            "profile_picture": "/path/to/profile9.jpg",
+            "profile_bio": "Passionate about creating and enjoying beautiful melodies."
+        },
+        {
+            "username": "FitnessFanatic",
+            "password": "PowerUp2023",
+            "profile_picture": "/path/to/profile10.jpg",
+            "profile_bio": "Fueling life with fitness and positive vibes."
+        }
+    ]
+}
