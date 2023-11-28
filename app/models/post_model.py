@@ -44,7 +44,6 @@ class Post(UUIDAuditBase):
             'image_ref': self.image_ref,
             'comments': [],
             'shared_by_users': [],
-            'likes_dislikes': [],
             'tags': [],
             'created_at': self.created_at,
             'updated_at': self.updated_at,

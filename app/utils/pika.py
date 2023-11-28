@@ -148,6 +148,7 @@ def handle_comments_callback(ch, method, properties, body):
 
 def handle_share_post_callback(ch, method, properties, body):
     message = json.loads(json.loads(body))
+    print("message",message)
     match message['method']:
         case 'ADD':
             res = share_post_by_user(message['post_id'], message['user_id'])
@@ -177,7 +178,6 @@ def handle_follow_user_callback(ch, method, properties, body):
             )
 def handle_events_callback(ch, method, properties, body):
     message = json.loads(json.loads(body))
-    print("GOT HERE1")
     match message['method']:
         case 'REGISTER':
             res =  register_for_event(message['user_id'],message['event_id'])

@@ -69,8 +69,9 @@ def add_tags_to_post(post_id, tags):
         tag_from_mongo = tag_collection.find_document({'_id': tag['_id']})
         if not tag_from_mongo:
             tag_collection.add_document(tag)
-
+    post_from_db["tags"] = post_from_db["tags"] if post_from_db["tags"] else []
     result_tags = [tag for tag in post_from_db['tags']]
+
     for tag_to_add in tags:
         if not (tag_to_add['_id'] in post_from_db['tags']):
             result_tags.append(tag_to_add['_id'])

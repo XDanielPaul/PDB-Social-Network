@@ -57,7 +57,8 @@ Option 2:
     -   `poetry run litestar --app app.controllers.command_controller:app run --port 8000 --reload`
     -   `poetry run litestar --app app.controllers.query_controller:app run --port 8001 --reload`
     -   `poetry run python app/message_broker/event_handler.py`
-
+-   For generating database data use:
+    -   `poetry run python .\populize.py`
 # Pre-commit hooks
 
 Before you commit, you need to run pre-commit to ensure that your code is formatted correctly and that you have no linting errors. To do this, run `pre-commit` in the root directory of the project. If you have any errors, you will need to fix them before you can commit.

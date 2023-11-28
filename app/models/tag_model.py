@@ -38,6 +38,7 @@ class Tag(UUIDBase):
         match method:
             case 'ADD':
                 return self.to_dict_create()
+            
 
 
 class TagPost(BaseModel):

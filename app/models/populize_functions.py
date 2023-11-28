@@ -13,6 +13,7 @@ import random
 from faker import Faker
 import datetime
 from datetime import timedelta
+import pytz
 
 # TODO
 # [DONE] Create users
@@ -23,18 +24,17 @@ from datetime import timedelta
 # [DONE] Create some events
 # [DONE] Create some attending users to events
 
-sys.path.append('../')
-from utils.pika import RabbitMQConnection
+from app.utils.pika import RabbitMQConnection
 
 connection_string = "postgresql://admin:admin@localhost:5432/db_name"
-engine = create_engine(connection_string, echo=True)
+engine = create_engine(connection_string)
 Session = sessionmaker(bind=engine)
 fake = Faker()
 
 
 def create_users():
     session = Session()
-    path_to_file = './example_data/users.json'
+    path_to_file = './app/models/example_data/users.json'
     with open(path_to_file, 'r') as json_file:
         user_data = json.load(json_file)
     user_data = user_data['users']
@@ -73,17 +73,21 @@ def create_posts(users: list[User]):
     tags = [generate_tag() for _ in range(10)]
     session.add_all(tags)
     session.commit()
-    session.refresh(tags)
+    for tag in tags:
+        session.refresh(tag)
     # adding posts to the database
     posts = [generate_post() for _ in range(10)]
     session.add_all(posts)
     session.commit()
-    session.refresh(posts)
+
+    for post in posts:
+        session.refresh(post)
+
     tags_and_posts = {f"{post.id}": [] for post in posts}
 
     # adding tags to posts in Postgre
     for post in posts:
-        for tag in random.choices(tags, k=3):
+        for tag in random.sample(tags, k=3):
             tags_and_posts[f"{post.id}"].append(tag)
             insert_statement = tags_posts_associations.insert().values(
                 {'tag_name': tag.id, 'tag_post': post.id}
@@ -93,9 +97,16 @@ def create_posts(users: list[User]):
     # adding post and its tags to the mongo
     for post in posts:
         formated_data = post.format_for_rabbit('CREATE')
-        tags = {'post_id': str(post.id), 'tags': tags_and_posts[f"{post.id}"], 'method': 'ADD'}
         with RabbitMQConnection() as conn:
             conn.publish_message('crud_operations', formated_data)
+            
+    for post in posts:
+        tags={
+            'post_id': str(post.id),
+            'tags': [tag.format_for_rabbit('ADD') for tag in tags_and_posts[f"{post.id}"]],
+            'method': 'ADD',
+        }
+        with RabbitMQConnection() as conn:
             conn.publish_message('tags', json.dumps(tags))
 
     session.close()
@@ -108,10 +119,10 @@ def create_comments(users: list[User], posts: list[Post]):
     formated_comments_rabbit = []
     comment_objects = []
     for user in users:
-        posts_random = random.choices(posts, k=3)
+        posts_random = random.sample(posts, k=3)
         for post in posts_random:
             new_comment = Comment(
-                content=fake.sentence(random_seed=12), created_by_id=user.id, on_post_id=post.id
+                content=fake.sentence(), created_by_id=user.id, on_post_id=post.id
             )
             # adding comment to database
             sesion.add(new_comment)
@@ -137,17 +148,17 @@ def create_comments(users: list[User], posts: list[Post]):
 
 def create_shared_posts(users: list[User], posts: list[Post]):
     session = Session()
-    shared_posts = []
+    shared_posts_all = []
     for user in users:
-        shared_posts = random.choices(posts, k=2)
+        shared_posts = random.sample(posts, k=2)
         for post in shared_posts:
-            new_share = {'shared_post': post.id, 'shared_by': user.id}
-            shared_posts.append(new_share)
+            new_share = {'shared_post': str(post.id), 'shared_by': str(user.id)}
+            shared_posts_all.append(new_share)
             insert_statement = posts_shared_association.insert().values(new_share)
             session.execute(insert_statement)
             session.commit()
     formated_shares = []
-    for shared_post in shared_posts:
+    for shared_post in shared_posts_all:
         formated_data = json.dumps(
             {
                 'post_id': shared_post['shared_post'],
@@ -159,7 +170,7 @@ def create_shared_posts(users: list[User], posts: list[Post]):
 
     with RabbitMQConnection() as conn:
         for formated_data in formated_shares:
-            conn.publish_message('shared_posts', formated_data)
+            conn.publish_message('share_post', formated_data)
     session.close()
 
 
@@ -168,7 +179,7 @@ def create_likes_dislikes(users: list[User], posts: list[Post]):
     Faker.seed(0)
     likes_dislikes = []
     for user in users:
-        posts_random = random.choices(posts, k=3)
+        posts_random = random.sample(posts, k=3)
         for post in posts_random:
             new_like = LikeDislike(
                 reviewed_by_id=user.id,
@@ -190,25 +201,33 @@ def create_likes_dislikes(users: list[User], posts: list[Post]):
 def create_events(users: list[User]):
     session = Session()
     Faker.seed(0)
-    start_date = datetime.datetime(2024, 1, 1, 0, 0, 0, 0)
-    end_date = datetime.datetime(2025, 1, 1, 0, 0, 0, 0)
+    prague_timezone = pytz.timezone('Europe/Prague')
 
     def generate_event():
+        fake_datetime = datetime.datetime(
+            2024,
+            month=random.randint(1, 12),
+            day=random.randint(1, 28),
+            hour=random.randint(1, 23),
+            minute=random.randint(1, 59),
+            second=random.randint(1, 59),
+            microsecond=0,
+            tzinfo=prague_timezone,
+        )
         return Event(
             name=fake.sentence(),
             description=fake.paragraph(nb_sentences=5),
             event_pict=f"/path/to/{fake.word()}.jpg",
             capacity=random.randint(10, 25),
-            event_datetime=fake.date_time_between(
-                datetime_start=start_date, datetime_end=end_date, tzinfo=None
-            ),
+            event_datetime=fake_datetime,
             created_event_id=random.choice(users).id,
         )
 
     events = [generate_event() for _ in range(10)]
     session.add_all(events)
     session.commit()
-    session.refresh(events)
+    for event in events:
+        session.refresh(event)
 
     with RabbitMQConnection() as conn:
         for event in events:
@@ -221,9 +240,9 @@ def create_attending_users(users: list[User], events: list[Event]):
     session = Session()
     inserts_formated = []
     for event in events:
-        attending_users = random.choices(users, k=random.randint(1, 10))
+        attending_users = random.sample(users, k=random.randint(1, 10))
         for user in attending_users:
-            formated_insert = {{'user_attending': user.id, 'on_event': event.id}}
+            formated_insert = {'user_attending': user.id, 'on_event': event.id}
             insert_statement = event_attending_associations.insert().values(formated_insert)
             inserts_formated.append(formated_insert)
             session.execute(insert_statement)
@@ -237,7 +256,7 @@ def create_attending_users(users: list[User], events: list[Event]):
                     {
                         'method': 'REGISTER',
                         'user_id': str(insert['user_attending']),
-                        'event_id': str(insert['event_id']),
+                        'event_id': str(insert['on_event']),
                         'model': 'events',
                     }
                 ),
@@ -245,20 +264,27 @@ def create_attending_users(users: list[User], events: list[Event]):
     session.close()
 
 
-if __name__ == "__main__":
-    # Database reset
-    UUIDBase.metadata.drop_all(engine)
-    UUIDBase.metadata.create_all(engine)
-
-    while True:
-        question = input('What do you want? (Y for generating all data)')
-
-        if question == "Y":
-            generated_users = create_users()
-            posts = create_posts(generated_users)
-            create_comments(generated_users, posts)
-            create_shared_posts(generated_users, posts)
-            create_likes_dislikes(generated_users, posts)
-            events = create_events(generated_users)
-            create_attending_users(generated_users, events)
-            break
+def create_follows(users: list[User]):
+    session = Session()
+    followers = []
+    for user in users:
+        users_without_user = [user_tmp for user_tmp in users if user_tmp.id != user.id]
+        for random_user in random.sample(users_without_user, k=5):
+            follow_insert = {'follower_id': str(user.id), 'followed_id': str(random_user.id)}
+            insert_statement = user_followers_association.insert().values(
+                follow_insert
+            )
+            followers.append(follow_insert)
+            session.execute(insert_statement)        
+    session.commit()
+    with  RabbitMQConnection() as conn:
+        for follow in followers:
+            data_for_rabbit = json.dumps(
+                {
+                    'follower_id':follow['follower_id'],
+                    'followed_id':follow['followed_id'],
+                    'method':'ADD'
+                }
+            )
+            conn.publish_message('follow_user',data_for_rabbit)
+    session.close()

@@ -51,7 +51,7 @@ class Comment(UUIDAuditBase):
                 message['data'] = self.to_dict_update()
             case 'DELETE':
                 message['data'] = self.to_dict_delete()
-        return json.dumps(message)
+        return json.dumps(message,default=str)
 
 
 class CommentCreate(BaseModel):
