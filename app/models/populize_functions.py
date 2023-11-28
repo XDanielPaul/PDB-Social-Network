@@ -41,6 +41,7 @@ def create_users():
     created_users: list[User] = []
     for user in user_data:
         user = User(**user)
+        user.generate_hash_password(user.password)
         session.add(user)
         session.commit()
         session.refresh(user)

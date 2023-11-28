@@ -79,6 +79,8 @@ class UserController(Controller):
                 detail="This user is already in the database.", status_code=HTTP_409_CONFLICT
             )
         created_user = User(**user_to_create)
+        created_user.generate_hash_password(created_user.password)
+        print(created_user.password)
         db_session.add(created_user)
         await db_session.commit()
         await db_session.refresh(created_user)
@@ -127,10 +129,10 @@ class UserController(Controller):
 
         if not db_user:
             raise HTTPException(
-                detail="User with this username doesn't exist.", status_code=HTTP_404_NOT_FOUND
+                detail="Username or password is not correct.", status_code=HTTP_404_NOT_FOUND
             )
-        if db_user.password != user_to_login['password']:
-            raise HTTPException(detail="Wrong password.", status_code=HTTP_404_NOT_FOUND)
+        if not db_user.verify_password(user_to_login['password']):
+            raise HTTPException(detail="Username or password is not correct.", status_code=HTTP_404_NOT_FOUND)
 
         response = jwt_auth.login(
             identifier=str(db_user.id),
