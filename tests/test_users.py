@@ -1,9 +1,11 @@
 import requests
 
+# QUERY
+
 
 def test_get_users(headers) -> None:
     r = requests.get(
-        'http://localhost:8000/users',
+        'http://localhost:8001/users',
         headers=headers,
     )
     assert r.status_code == 200
@@ -12,11 +14,53 @@ def test_get_users(headers) -> None:
 
 def test_get_user(headers, id) -> None:
     r = requests.get(
-        f'http://localhost:8000/users/{id}',
+        f'http://localhost:8001/users/{id}',
         headers=headers,
     )
     assert r.status_code == 200
-    assert r.json()['username'] == 'test'
+    assert r.json()[0]['username'] == 'test'
+
+
+def test_my_followers(headers) -> None:
+    r = requests.get('http://localhost:8001/users/my_followers', headers=headers)
+    assert r.status_code == 200
+    assert r.json() == []
+
+
+def test_my_following(headers) -> None:
+    r = requests.get('http://localhost:8001/users/my_following', headers=headers)
+    assert r.status_code == 200
+    assert r.json() == []
+
+
+def test_users_following(headers, id) -> None:
+    r = requests.get(
+        f'http://localhost:8001/users/{id}/following',
+        headers=headers,
+    )
+    assert r.status_code == 200
+    assert r.json() == []
+
+
+def test_users_followers(headers, id) -> None:
+    r = requests.get(
+        f'http://localhost:8001/users/{id}/followers',
+        headers=headers,
+    )
+    assert r.status_code == 200
+    assert r.json() == []
+
+
+def test_users_posts(headers, id) -> None:
+    r = requests.get(
+        f'http://localhost:8001/users/{id}/posts',
+        headers=headers,
+    )
+    assert r.status_code == 200
+    assert r.json()[0]['content'] == 'test'
+
+
+# COMMAND
 
 
 def test_user_update(headers, id) -> None:

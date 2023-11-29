@@ -43,7 +43,7 @@ class UserController(Controller):
         user = user_collection.find_document({"_id": str(id)})
         if not user:
             raise HTTPException(detail="User does not exist", status_code=HTTP_404_NOT_FOUND)
-        return expand_ids_to_objects_user(user)
+        return expand_ids_to_objects_user([user])
 
     @get(path="/{id:uuid}/posts", tags=["User"])
     async def get_user_posts(self, id: UUID) -> dict:

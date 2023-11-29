@@ -1,33 +1,35 @@
+import asyncio
+import json
+from typing import Any
+from uuid import UUID
+
+from litestar import Request, delete, post
+from litestar.contrib.jwt import Token
 from litestar.controller import Controller
-from litestar import post, Request, delete
+from litestar.dto import DTOData
+from litestar.exceptions import HTTPException
+from litestar.status_codes import (
+    HTTP_400_BAD_REQUEST,
+    HTTP_401_UNAUTHORIZED,
+    HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT,
+    HTTP_500_INTERNAL_SERVER_ERROR,
+)
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
+from app.models.base_for_modelling import DeleteConfirm
 from app.models.event_model import (
+    AttendConfirm,
     Event,
     EventCreate,
     EventCreateDto,
     EventModel,
-    AttendConfirm,
     event_attending_associations,
 )
 from app.models.user_model import User
-from litestar.dto import DTOData
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Any
-from litestar.contrib.jwt import Token
-from litestar.exceptions import HTTPException
-from litestar.status_codes import (
-    HTTP_404_NOT_FOUND,
-    HTTP_400_BAD_REQUEST,
-    HTTP_401_UNAUTHORIZED,
-    HTTP_409_CONFLICT,
-    HTTP_500_INTERNAL_SERVER_ERROR,
-)
 from app.utils.pika import RabbitMQConnection
-from app.models.base_for_modelling import DeleteConfirm
-from uuid import UUID
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
-import asyncio
-import json
 
 
 class EventController(Controller):
@@ -195,12 +197,14 @@ class EventController(Controller):
         with RabbitMQConnection() as conn:
             conn.publish_message(
                 'events',
-                {
-                    'method': 'LEAVE',
-                    'model': 'events',
-                    'user_id': str(user_db.id),
-                    'event_id': str(event_id),
-                },
+                json.dumps(
+                    {
+                        'method': 'LEAVE',
+                        'model': 'events',
+                        'user_id': str(user_db.id),
+                        'event_id': str(event_id),
+                    }
+                ),
             )
 
         return AttendConfirm(

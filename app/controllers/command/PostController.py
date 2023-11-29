@@ -33,8 +33,8 @@ from app.models.post_model import (
     PostLikeDislike,
     PostLikeDislikeDto,
     PostReturnModel,
-    posts_shared_association,
     TagInPost,
+    posts_shared_association,
 )
 from app.models.tag_model import Tag, tags_posts_associations
 from app.models.user_model import User
@@ -198,7 +198,6 @@ class PostController(Controller):
 
         await db_session.delete(like_dislike_instance)
         await db_session.commit()
-        # print(like_dislike_instance.format_for_rabbit('DELETE'))
 
         with RabbitMQConnection() as conn:
             conn.publish_message(
@@ -219,7 +218,7 @@ class PostController(Controller):
 
         if not db_user:
             raise HTTPException(
-                detail="User which submits the follow of the post doesnt exist.",
+                detail="User which wants to share the post doesnt exist.",
                 status_code=HTTP_404_NOT_FOUND,
             )
 

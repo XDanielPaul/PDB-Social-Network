@@ -2,6 +2,7 @@ import motor.motor_asyncio as motor
 from litestar import Litestar, get
 from litestar.openapi.config import OpenAPIConfig
 
+from app.controllers.query.EventController import EventController
 from app.controllers.query.PostController import PostController
 from app.controllers.query.UserController import UserController, jwt_auth
 
@@ -28,7 +29,7 @@ openapi_config = OpenAPIConfig(
 )
 
 app = Litestar(
-    route_handlers=[hello_world, UserController, PostController],
+    route_handlers=[hello_world, UserController, PostController, EventController],
     on_app_init=[jwt_auth.on_app_init],
     openapi_config=openapi_config,
 )

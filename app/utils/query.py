@@ -4,8 +4,12 @@ from app.utils.mongo.collections import *
 def expand_ids_to_objects_user(users: list[dict]) -> list[dict]:
     for user in users:
         user['followers'] = user_collection.find_documents({'_id': {'$in': user['followers']}})
-        user['following'] = user_collection.find_documents({'_id': {'$in': user['following']}})
+        user['follows'] = user_collection.find_documents({'_id': {'$in': user['follows']}})
+        user['postIds'] = post_collection.find_documents({'created_by_id': user['_id']})
         user['shared_posts'] = post_collection.find_documents({'created_by_id': user['_id']})
+        user['attending_events'] = event_collection.find_documents(
+            {'_id': {'$in': user['attending_events']}}
+        )
     return users
 
 
@@ -18,3 +22,12 @@ def expand_ids_to_objects_post(posts: list[dict]) -> list[dict]:
         )
         post['tags'] = tag_collection.find_documents({'_id': {'$in': post['tags']}})
     return posts
+
+
+def expand_ids_to_objects_event(events: list[dict]) -> list[dict]:
+    for event in events:
+        if event.get('attending_users'):
+            event['attending_users'] = user_collection.find_documents(
+                {'_id': {'$in': event['attending_users']}}
+            )
+    return events

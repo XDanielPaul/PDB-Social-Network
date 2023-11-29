@@ -1,7 +1,7 @@
 from typing import Any
 from uuid import UUID
 
-from litestar import Request,get
+from litestar import Request, get
 from litestar.contrib.jwt import Token
 from litestar.controller import Controller
 from litestar.exceptions import HTTPException
@@ -24,7 +24,7 @@ class PostController(Controller):
         post = post_collection.find_document({'_id': str(id)})
         if not post:
             raise HTTPException(detail='Post does not exist', status_code=HTTP_404_NOT_FOUND)
-        return expand_ids_to_objects_post(post)
+        return expand_ids_to_objects_post([post])
 
     # Get posts containing a list of tags
     @get(path='/tags', tags=['Posts'])
@@ -46,6 +46,7 @@ class PostController(Controller):
         rated_posts = sorted(
             posts,
             key=lambda post: (
+                post['created_at'],
                 ratings.count({'reviewed_on_id': post['_id'], 'rating': True}),
                 ratings.count({'reviewed_on_id': post['_id'], 'rating': False}),
             ),
@@ -65,10 +66,10 @@ class PostController(Controller):
         )
         ratings = like_dislike_collection.find_documents({})
         # Filter by likes and dislikes
-        # TODO: Filter by created_at
         rated_posts = sorted(
             posts_posted_by_followers,
             key=lambda post: (
+                post['created_at'],
                 ratings.count({'reviewed_on_id': post['_id'], 'rating': True}),
                 ratings.count({'reviewed_on_id': post['_id'], 'rating': False}),
             ),

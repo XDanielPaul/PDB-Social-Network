@@ -1,3 +1,9 @@
+DP 30.11.2023
+- Added tests for User Query
+- Added tests for Post Controller and Query
+- Added tests for Event Controller and Query
+- Fixed a few bugs
+
 DP 26.11.2023
 - Added tests for User Controller
 
