@@ -100,15 +100,25 @@ def create_posts(users: list[User]):
         formated_data = post.format_for_rabbit('CREATE')
         with RabbitMQConnection() as conn:
             conn.publish_message('crud_operations', formated_data)
-            
+
     for post in posts:
-        tags={
+        tags = {
             'post_id': str(post.id),
             'tags': [tag.format_for_rabbit('ADD') for tag in tags_and_posts[f"{post.id}"]],
             'method': 'ADD',
         }
         with RabbitMQConnection() as conn:
             conn.publish_message('tags', json.dumps(tags))
+            conn.publish_message(
+                'posts',
+                json.dumps(
+                    {
+                        'method': 'ADD',
+                        'user_id': str(post.created_by_id),
+                        'post_id': str(post.id),
+                    }
+                ),
+            )
 
     session.close()
     return posts
@@ -272,20 +282,18 @@ def create_follows(users: list[User]):
         users_without_user = [user_tmp for user_tmp in users if user_tmp.id != user.id]
         for random_user in random.sample(users_without_user, k=5):
             follow_insert = {'follower_id': str(user.id), 'followed_id': str(random_user.id)}
-            insert_statement = user_followers_association.insert().values(
-                follow_insert
-            )
+            insert_statement = user_followers_association.insert().values(follow_insert)
             followers.append(follow_insert)
-            session.execute(insert_statement)        
+            session.execute(insert_statement)
     session.commit()
-    with  RabbitMQConnection() as conn:
+    with RabbitMQConnection() as conn:
         for follow in followers:
             data_for_rabbit = json.dumps(
                 {
-                    'follower_id':follow['follower_id'],
-                    'followed_id':follow['followed_id'],
-                    'method':'ADD'
+                    'follower_id': follow['follower_id'],
+                    'followed_id': follow['followed_id'],
+                    'method': 'ADD',
                 }
             )
-            conn.publish_message('follow_user',data_for_rabbit)
+            conn.publish_message('follow_user', data_for_rabbit)
     session.close()

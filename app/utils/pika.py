@@ -14,7 +14,9 @@ from .mongo.custom_methods import (
     remove_share_post_by_user,
     share_post_by_user,
     register_for_event,
-    leave_event
+    leave_event,
+    add_post_to_user,
+    remove_post_from_user
 )
 
 
@@ -190,6 +192,20 @@ def handle_events_callback(ch, method, properties, body):
                 f' [x]  User {message["user_id"]} left {message["event_id"]} {status[res]}'
             )
 
+def handle_posts_callback(ch, method, properties, body):
+    message = json.loads(json.loads(body))
+    match message['method']:
+        case 'ADD':
+            res =  add_post_to_user(message['post_id'],message['user_id'])
+            print(
+                f' [x]  Added post {message["post_id"]} to user {message["user_id"]} {status[res]}'
+            )
+        case 'REMOVE':
+            res =  remove_post_from_user(message['post_id'],message['user_id'])
+            print(
+                f' [x]  Removed {message["post_id"]} from user {message["user_id"]} {status[res]}'
+            )
+
 
 # ---------------------------------------------------------
 # Queues
@@ -202,5 +218,6 @@ queues_with_callbacks: dict[str, Callable[..., None]] = {
     'comments': handle_comments_callback,
     'share_post': handle_share_post_callback,
     'follow_user': handle_follow_user_callback,
-    'events' : handle_events_callback
+    'events' : handle_events_callback,
+    'posts' : handle_posts_callback
 }

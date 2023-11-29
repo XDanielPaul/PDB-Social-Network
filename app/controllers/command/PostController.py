@@ -96,6 +96,12 @@ class PostController(Controller):
         with RabbitMQConnection() as conn:
             conn.publish_message('crud_operations', db_post.format_for_rabbit('CREATE'))
             conn.publish_message('tags', data_for_rabbit)
+            conn.publish_message(
+                'posts',
+                json.dumps(
+                    {'method': 'ADD', 'user_id': str(db_user.id), 'post_id': str(db_post.id)}
+                ),
+            )
 
         return PostReturnModel(
             title=db_post.title,
@@ -123,6 +129,12 @@ class PostController(Controller):
 
         with RabbitMQConnection() as conn:
             conn.publish_message('crud_operations', post.format_for_rabbit('DELETE'))
+            conn.publish_message(
+                'posts',
+                json.dumps(
+                    {'method': 'REMOVE', 'user_id': str(request.auth.sub), 'post_id': str(post.id)}
+                ),
+            )
 
         return DeleteConfirm(deleted=True, message="Post was deleted")
 

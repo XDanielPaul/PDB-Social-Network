@@ -69,7 +69,7 @@ class User(UUIDBase):
             'password': self.password,
             'profile_picture': self.profile_picture,
             'profile_bio': self.profile_bio,
-            'postInfoIds': [],
+            'postIds': [],
             'followers': [],
             'follows': [],
             'shared_posts': [],
