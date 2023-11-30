@@ -35,7 +35,7 @@ class EventController(Controller):
 
     @get(path="/my_events", tags=["Event"])
     async def get_my_events(self, request: Request[dict, Token, Any]) -> dict:
-        events = event_collection.find_documents({"created_by_id": request.auth.sub})
+        events = event_collection.find_documents({"created_event_id": request.auth.sub})
         return expand_ids_to_objects_event(events)
 
     @get(path="/{id:uuid}/participants", tags=["Event"])

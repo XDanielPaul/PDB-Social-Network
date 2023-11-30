@@ -1,7 +1,6 @@
 from typing import Any
 
-from litestar import Litestar, Request, get
-from litestar.contrib.jwt import Token
+from litestar import Litestar
 from litestar.contrib.sqlalchemy.base import UUIDBase
 from litestar.contrib.sqlalchemy.plugins.init import SQLAlchemyInitPlugin
 from litestar.contrib.sqlalchemy.plugins.init.config import (
@@ -15,17 +14,6 @@ from app.controllers.command.EventController import EventController
 from app.controllers.command.PostController import PostController
 from app.controllers.command.TagController import TagController
 from app.controllers.command.UserController import UserController, jwt_auth
-from app.models.user_model import User
-from app.utils.pika import RabbitMQConnection
-
-
-@get("/")
-async def hello_world(request: Request[User, Token, Any]) -> str:
-    # Publish the message to the 'hello' queue
-    with RabbitMQConnection() as conn:
-        conn.publish_message('hello', {'message': 'Hello from Controller!'})
-    return f"Hello, user '{request.user}' with id '{request.auth.sub}'!"
-
 
 # PostgreSQL connection string: postgresql+asyncpg://admin:admin@localhost:5432/db_name
 # SQLite connection string: sqlite+aiosqlite:///test.sqlite
@@ -54,7 +42,6 @@ app = Litestar(
     on_startup=[on_startup],
     on_app_init=[jwt_auth.on_app_init],
     route_handlers=[
-        hello_world,
         UserController,
         TagController,
         PostController,

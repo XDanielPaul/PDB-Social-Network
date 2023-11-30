@@ -1,3 +1,8 @@
+DP 1.12.2023
+- Added Query controllers for Comments and Tags
+- Added tests for Comments and Tags
+- Fixed a few bugs
+
 DP 30.11.2023
 - Added tests for User Query
 - Added tests for Post Controller and Query

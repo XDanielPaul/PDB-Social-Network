@@ -3,7 +3,10 @@ import requests
 
 
 @pytest.fixture(autouse=True)
-def setup():
+def setup_teardown():
+    # SETUP
+
+    # Create a test user
     r = requests.post(
         'http://localhost:8000/users/register',
         json={
@@ -15,6 +18,7 @@ def setup():
     )
     user_id = r.json()['id']
 
+    # Get the user's token
     r = requests.post(
         'http://localhost:8000/users/login',
         json={
@@ -25,6 +29,7 @@ def setup():
     token = r.json()['token']
     headers = {'Authorization': f'Bearer {token}'}
 
+    # Create a test post
     r = requests.post(
         'http://localhost:8000/posts',
         headers=headers,
@@ -37,6 +42,30 @@ def setup():
 
     post_id = r.json()['id']
 
+    # Create a test tag
+    r = requests.post(
+        'http://localhost:8000/tag',
+        headers=headers,
+        json={
+            "name": "test",
+        },
+    )
+
+    tag_id = r.json()['id']
+
+    # Create a test comment
+    r = requests.post(
+        'http://localhost:8000/comments',
+        headers=headers,
+        json={
+            "content": "test",
+            "on_post_id": post_id,
+        },
+    )
+
+    comment_id = r.json()['Comment']['_id']
+
+    # Create a test event
     r = requests.post(
         'http://localhost:8000/event',
         headers=headers,
@@ -50,24 +79,43 @@ def setup():
 
     event_id = r.json()['id']
 
+    # Do the actual test
     yield
 
+    # TEARDOWN
+
+    # Delete the test event
     requests.delete(
         f'http://localhost:8000/event/{event_id}',
         headers=headers,
     )
 
+    # Delete the test comment
+    requests.delete(
+        f'http://localhost:8000/comments/{comment_id}',
+        headers=headers,
+    )
+
+    # Delete the test tag
+    r = requests.delete(
+        f'http://localhost:8000/tag/{tag_id}',
+        headers=headers,
+    )
+
+    # Delete the test post
     requests.delete(
         f'http://localhost:8000/posts/{post_id}',
         headers=headers,
     )
 
+    # Delete the test user
     requests.delete(
         f'http://localhost:8000/users/{user_id}',
         headers=headers,
     )
 
 
+# Get the user's token and return headers for authroized requests
 @pytest.fixture
 def headers():
     r = requests.post(
@@ -83,6 +131,7 @@ def headers():
     return headers
 
 
+# Get the user's id
 @pytest.fixture
 def id(headers):
     r = requests.get(
@@ -93,6 +142,7 @@ def id(headers):
     return [user for user in users if user is not None][0]['_id']
 
 
+# Get the post's id
 @pytest.fixture
 def post_id(headers):
     r = requests.get(
@@ -103,6 +153,7 @@ def post_id(headers):
     return [post for post in posts if post is not None][0]['_id']
 
 
+# Get the event's id
 @pytest.fixture
 def event_id(headers):
     r = requests.get(
@@ -113,6 +164,28 @@ def event_id(headers):
     return [event for event in events if event is not None][0]['_id']
 
 
+# Get the comment's id
+@pytest.fixture
+def comment_id(headers):
+    r = requests.get(
+        'http://localhost:8001/comments',
+        headers=headers,
+    )
+    comments = [comment if comment['content'] == 'test' else None for comment in r.json()]
+    return [comment for comment in comments if comment is not None][0]['_id']
+
+
+@pytest.fixture
+def tag_id(headers):
+    r = requests.get(
+        'http://localhost:8001/tags',
+        headers=headers,
+    )
+    tags = [tag if tag['name'] == 'Test' else None for tag in r.json()]
+    return [tag for tag in tags if tag is not None][0]['_id']
+
+
+# Make fake user attend event
 @pytest.fixture
 def create_attend_user_id(event_id):
     # Create a new user
@@ -145,6 +218,7 @@ def create_attend_user_id(event_id):
     return user_id
 
 
+# Make second fake user attend event
 @pytest.fixture
 def create_attend_user_id2(event_id):
     # Create a new user

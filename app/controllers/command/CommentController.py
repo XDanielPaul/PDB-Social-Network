@@ -87,12 +87,6 @@ class CommentController(Controller):
                 detail="Comment with this id does not exist", status_code=HTTP_404_NOT_FOUND
             )
 
-        if db_comment.created_comment_by_id != request.auth.sub:
-            raise HTTPException(
-                detail="You are not allowed to update this comment.",
-                status_code=HTTP_409_CONFLICT,
-            )
-
         db_comment.content = data_dct['content']
         await db_session.commit()
         await db_session.refresh(db_comment)
@@ -110,12 +104,6 @@ class CommentController(Controller):
         if not db_comment:
             raise HTTPException(
                 detail="Comment with this id does not exist", status_code=HTTP_404_NOT_FOUND
-            )
-
-        if db_comment.created_comment_by_id != request.auth.sub:
-            raise HTTPException(
-                detail="You are not allowed to delete this comment.",
-                status_code=HTTP_409_CONFLICT,
             )
 
         db_post = await db_session.get(Post, db_comment.on_post_id)

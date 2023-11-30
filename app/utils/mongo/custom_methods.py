@@ -1,8 +1,10 @@
 from .collections import *
 
+
 class PikaException(Exception):
     def __init__(self, message):
         super().__init__(message)
+
 
 def add_comment_to_post(post_id, comment_id):
     post_from_db = post_collection.find_document({'_id': post_id})
@@ -65,6 +67,8 @@ def remove_follow_user(follower_id, followed_id):
 
 def add_tags_to_post(post_id, tags):
     post_from_db = post_collection.find_document({'_id': post_id})
+    if not post_from_db:
+        return False
     for tag in tags:
         tag_from_mongo = tag_collection.find_document({'_id': tag['_id']})
         if not tag_from_mongo:
@@ -99,13 +103,16 @@ def share_post_by_user(post_id, user_id):
     )
     return post_result and user_result
 
+
 def add_post_to_user(post_id, user_id):
-    result = mongo_db.users.update_one({'_id':user_id},{'$push':{'postIds':post_id}})
+    result = mongo_db.users.update_one({'_id': user_id}, {'$push': {'postIds': post_id}})
     return bool(result)
 
+
 def remove_post_from_user(post_id, user_id):
-    result = mongo_db.users.update_one({'_id':user_id},{'$pull':{'postIds':post_id}})
+    result = mongo_db.users.update_one({'_id': user_id}, {'$pull': {'postIds': post_id}})
     return bool(result)
+
 
 def remove_share_post_by_user(post_id, user_id):
     post_from_db = post_collection.find_document({'_id': post_id})
@@ -131,22 +138,26 @@ def remove_share_post_by_user(post_id, user_id):
     )
     return post_result and user_result
 
-def register_for_event(user_id,event_id):
-    event_from_db = event_collection.find_document({'_id':event_id})
+
+def register_for_event(user_id, event_id):
+    event_from_db = event_collection.find_document({'_id': event_id})
     if not event_from_db:
         raise PikaException("Event is not in the database.")
-    users = event_from_db.get('attending_users',[])
-    capacity = event_from_db.get('capacity',None)
+    users = event_from_db.get('attending_users', [])
+    capacity = event_from_db.get('capacity', None)
     if len(users) >= capacity:
         raise PikaException("Event is full.")
     users.append(user_id)
-    event_result = event_collection.update_document(event_id,{'attending_users':users})
+    event_result = event_collection.update_document(event_id, {'attending_users': users})
 
-    user_from_db = mongo_db.users.update_one({'_id':user_id},{"$push":{"attending_events":event_id}})
+    user_from_db = mongo_db.users.update_one(
+        {'_id': user_id}, {"$push": {"attending_events": event_id}}
+    )
     return bool(event_result) and bool(user_from_db)
 
-def leave_event(user_id,  event_id):
-    update_query = {'$pull':{'attending_users':user_id}}
-    result1 = mongo_db.events.update_one({'_id':event_id},update_query)
-    result2 = mongo_db.users.update_one({'_id':user_id},{"$pull":{"attending_events":event_id}})
+
+def leave_event(user_id, event_id):
+    update_query = {'$pull': {'attending_users': user_id}}
+    result1 = mongo_db.events.update_one({'_id': event_id}, update_query)
+    result2 = mongo_db.users.update_one({'_id': user_id}, {"$pull": {"attending_events": event_id}})
     return bool(result1) and bool(result2)

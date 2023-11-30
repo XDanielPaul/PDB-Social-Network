@@ -50,7 +50,7 @@ def test_get_event_participants(headers, event_id):
 def test_my_events(headers):
     r = requests.get('http://localhost:8001/events/my_events', headers=headers)
     assert r.status_code == 200
-    assert r.json() == []
+    assert r.json()[0]['name'] == 'test'
 
 
 def test_my_attending_events(headers, event_id):
