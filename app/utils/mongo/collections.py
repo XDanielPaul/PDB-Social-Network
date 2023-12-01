@@ -3,6 +3,7 @@ from pymongo.collection import Collection
 from .mongo_connect import mongo_db
 
 
+# Generic controller for MongoDB collections
 class CollectionController:
     def __init__(self, collection):
         self.collection: Collection = collection
@@ -29,6 +30,7 @@ class CollectionController:
         return list(self.collection.find(query))
 
 
+# Create instance for each collection
 user_collection = CollectionController(mongo_db['users'])
 post_collection = CollectionController(mongo_db['posts'])
 comment_collection = CollectionController(mongo_db['comments'])

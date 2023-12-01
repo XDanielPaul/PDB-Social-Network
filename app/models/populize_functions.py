@@ -1,32 +1,27 @@
-from .user_model import User, user_followers_association
+import datetime
+import json
+import random
+
+import pytz
+from faker import Faker
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+from app.utils.pika import RabbitMQConnection
+
 from .comment_model import Comment
 from .event_model import Event, event_attending_associations
 from .like_dislike_model import LikeDislike
 from .post_model import Post, posts_shared_association
 from .tag_model import Tag, tags_posts_associations
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-import json
-import random
-from faker import Faker
-import datetime
-import pytz
-
-# TODO
-# [DONE] Create users
-# [DONE] Create posts and tags
-# [DONE] Create some shared posts
-# [DONE] Create some comments
-# [DONE] Create some likes and dislikes
-# [DONE] Create some events
-# [DONE] Create some attending users to events
-
-from app.utils.pika import RabbitMQConnection
+from .user_model import User, user_followers_association
 
 connection_string = "postgresql://admin:admin@localhost:5432/db_name"
 engine = create_engine(connection_string)
 Session = sessionmaker(bind=engine)
 fake = Faker()
+
+# Seeding the database with fake data
 
 
 def create_users():

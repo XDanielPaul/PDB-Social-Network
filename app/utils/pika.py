@@ -7,16 +7,16 @@ from pika.adapters.blocking_connection import BlockingChannel
 from .mongo.collections import mongo_collections
 from .mongo.custom_methods import (
     add_comment_to_post,
+    add_post_to_user,
     add_tags_to_post,
     follow_user,
+    leave_event,
+    register_for_event,
     remove_comment_from_post,
     remove_follow_user,
+    remove_post_from_user,
     remove_share_post_by_user,
     share_post_by_user,
-    register_for_event,
-    leave_event,
-    add_post_to_user,
-    remove_post_from_user
 )
 
 
@@ -25,6 +25,7 @@ class PikaException(Exception):
         super().__init__(message)
 
 
+# Class for handling RabbitMQ connection
 class RabbitMQConnection:
     credentials: pika.PlainCredentials = pika.PlainCredentials('admin', 'admin')
 
@@ -150,7 +151,7 @@ def handle_comments_callback(ch, method, properties, body):
 
 def handle_share_post_callback(ch, method, properties, body):
     message = json.loads(json.loads(body))
-    print("message",message)
+    print("message", message)
     match message['method']:
         case 'ADD':
             res = share_post_by_user(message['post_id'], message['user_id'])
@@ -178,30 +179,31 @@ def handle_follow_user_callback(ch, method, properties, body):
             print(
                 f' [x] Removed follow from user {message["follower_id"]} to user {message["followed_id"]} {status[res]}'
             )
+
+
 def handle_events_callback(ch, method, properties, body):
     message = json.loads(json.loads(body))
     match message['method']:
         case 'REGISTER':
-            res =  register_for_event(message['user_id'],message['event_id'])
+            res = register_for_event(message['user_id'], message['event_id'])
             print(
                 f' [x]  Added user {message["user_id"]} to event {message["event_id"]} {status[res]}'
             )
         case 'LEAVE':
-            res =  leave_event(message['user_id'],message['event_id'])
-            print(
-                f' [x]  User {message["user_id"]} left {message["event_id"]} {status[res]}'
-            )
+            res = leave_event(message['user_id'], message['event_id'])
+            print(f' [x]  User {message["user_id"]} left {message["event_id"]} {status[res]}')
+
 
 def handle_posts_callback(ch, method, properties, body):
     message = json.loads(json.loads(body))
     match message['method']:
         case 'ADD':
-            res =  add_post_to_user(message['post_id'],message['user_id'])
+            res = add_post_to_user(message['post_id'], message['user_id'])
             print(
                 f' [x]  Added post {message["post_id"]} to user {message["user_id"]} {status[res]}'
             )
         case 'REMOVE':
-            res =  remove_post_from_user(message['post_id'],message['user_id'])
+            res = remove_post_from_user(message['post_id'], message['user_id'])
             print(
                 f' [x]  Removed {message["post_id"]} from user {message["user_id"]} {status[res]}'
             )
@@ -218,6 +220,6 @@ queues_with_callbacks: dict[str, Callable[..., None]] = {
     'comments': handle_comments_callback,
     'share_post': handle_share_post_callback,
     'follow_user': handle_follow_user_callback,
-    'events' : handle_events_callback,
-    'posts' : handle_posts_callback
+    'events': handle_events_callback,
+    'posts': handle_posts_callback,
 }

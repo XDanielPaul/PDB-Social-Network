@@ -1,12 +1,13 @@
-from litestar.contrib.sqlalchemy.base import UUIDBase,UUIDAuditBase
-from litestar.dto import DTOConfig
-from sqlalchemy import Column, ForeignKey, Table
-from sqlalchemy.orm import Mapped, relationship
-from litestar.contrib.pydantic import PydanticDTO
-from pydantic import BaseModel
+import json
 from datetime import datetime
 from uuid import UUID
-import json
+
+from litestar.contrib.pydantic import PydanticDTO
+from litestar.contrib.sqlalchemy.base import UUIDAuditBase, UUIDBase
+from litestar.dto import DTOConfig
+from pydantic import BaseModel
+from sqlalchemy import Column, ForeignKey, Table
+from sqlalchemy.orm import Mapped, relationship
 
 event_attending_associations = Table(
     'event_attending',
@@ -16,6 +17,7 @@ event_attending_associations = Table(
 )
 
 
+# Event model for command
 class Event(UUIDAuditBase):
     __tablename__ = 'events'
 
@@ -28,24 +30,25 @@ class Event(UUIDAuditBase):
     created_event = relationship('User', back_populates='created_events')
 
     attending_users = relationship(
-        'User', secondary=event_attending_associations, back_populates='attending_events',
+        'User',
+        secondary=event_attending_associations,
+        back_populates='attending_events',
     )
 
     def to_dict_create(self):
         return {
-            '_id':str(self.id),
-            'name' :  self.name,
-            'description' : self.description,
-            'event_pict' : self.event_pict,
-            'capacity' :  self.capacity,
-            'event_datetime'  :  self.event_datetime,
-            'created_event_id' : str(self.created_event_id),
+            '_id': str(self.id),
+            'name': self.name,
+            'description': self.description,
+            'event_pict': self.event_pict,
+            'capacity': self.capacity,
+            'event_datetime': self.event_datetime,
+            'created_event_id': str(self.created_event_id),
         }
 
     def to_dict_delete(self):
-        return {
-            '_id':str(self.id)
-        }
+        return {'_id': str(self.id)}
+
     def format_for_rabbit(self, method):
         message = {'model': self.__tablename__, 'method': method}
         match method:
@@ -54,7 +57,7 @@ class Event(UUIDAuditBase):
             case 'DELETE':
                 message['data'] = self.to_dict_delete()
 
-        return json.dumps(message,default=str)
+        return json.dumps(message, default=str)
 
 
 class EventCreate(BaseModel):
@@ -62,7 +65,6 @@ class EventCreate(BaseModel):
     description: str
     capacity: int
     event_datetime: datetime
-
 
 
 class EventCreateDto(PydanticDTO[EventCreate]):
@@ -74,7 +76,8 @@ class EventModel(EventCreate):
     event_pict: str
     created_event_id: UUID
 
+
 class AttendConfirm(BaseModel):
-    event_id : UUID
-    current_capacity_left : int
-    result : bool
+    event_id: UUID
+    current_capacity_left: int
+    result: bool

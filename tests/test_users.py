@@ -65,11 +65,11 @@ def test_users_posts(headers, id) -> None:
 
 def test_user_update(headers, id) -> None:
     r = requests.get(
-        f'http://localhost:8000/users/{id}',
+        f'http://localhost:8001/users/{id}',
         headers=headers,
     )
     assert r.status_code == 200
-    assert r.json()['profile_picture'] == 'test'
+    assert r.json()[0]['profile_picture'] == 'test'
 
     r = requests.put(
         f'http://localhost:8000/users',

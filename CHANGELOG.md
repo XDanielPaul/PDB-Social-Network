@@ -1,7 +1,9 @@
 DP 1.12.2023
-- Added Query controllers for Comments and Tags
-- Added tests for Comments and Tags
+- Added Query controllers for Comments
+- Added tests for Comments
 - Fixed a few bugs
+- Document some undocumented code
+- Update README.md
 
 DP 30.11.2023
 - Added tests for User Query

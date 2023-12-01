@@ -8,7 +8,7 @@ from app.controllers.query.PostController import PostController
 from app.controllers.query.UserController import UserController, jwt_auth
 
 local_connection_string = ""
-
+# Setup MongoDB connection.
 client = motor.AsyncIOMotorClient("mongodb://admin:admin@127.0.0.1:27017/")
 try:
     client.admin.command('ping')
@@ -18,11 +18,12 @@ except Exception as e:
 
 mongo_db = client["social_db"]
 
+# Setup OpenAPI configuration.
 openapi_config = OpenAPIConfig(
     title="Query API",
     version="1.0.0",
 )
-
+# Setup Litestar application.
 app = Litestar(
     route_handlers=[
         UserController,

@@ -26,7 +26,7 @@ from app.models.user_model import (
 from app.utils.pika import RabbitMQConnection
 
 
-# Authentication
+# Authentication handler which returns user object based on jwt token
 async def retrieve_user_handler(
     token: Token, connection: ASGIConnection[Any, Any, Any, Any]
 ) -> Optional[User]:
@@ -39,6 +39,7 @@ async def retrieve_user_handler(
     return user
 
 
+# JWT authentication object
 jwt_auth = JWTAuth[User](
     retrieve_user_handler=retrieve_user_handler,
     token_secret="secret",
@@ -46,16 +47,19 @@ jwt_auth = JWTAuth[User](
 )
 
 
+# User controller for CUD operations
 class UserController(Controller):
     path = "/users"
 
-
+    # Create a user
     @post(path="/register", dto=PartialUserDto, tags=["User"])
     async def create_user(
         self, data: DTOData[UserCreateModel], db_session: AsyncSession
     ) -> UserReturn:
+        # Check if user already exists
         user_to_create = data.create_instance().model_dump()
 
+        # Check if user already exists
         check_if_exists = await db_session.execute(
             select(User).filter(User.username == user_to_create['username'])
         )
@@ -64,6 +68,7 @@ class UserController(Controller):
             raise HTTPException(
                 detail="This user is already in the database.", status_code=HTTP_409_CONFLICT
             )
+        # Create the user
         created_user = User(**user_to_create)
         created_user.generate_hash_password(created_user.password)
         print(created_user.password)
@@ -71,33 +76,44 @@ class UserController(Controller):
         await db_session.commit()
         await db_session.refresh(created_user)
 
+        # Publish the user to RabbitMQ queue for mongo synchronization
         with RabbitMQConnection() as conn:
             conn.publish_message('crud_operations', created_user.format_for_rabbit('CREATE'))
 
         return UserReturn(**(created_user.to_dict()))
 
+    # Update a user
     @put(path="/", dto=UserReturnDto, tags=["User"])
     async def update_user(self, data: DTOData[UserReturn], db_session: AsyncSession) -> UserReturn:
+        # Check if user exists
         data_dct = data.create_instance().model_dump()
         db_user = await db_session.get(User, data_dct['id'])
         if not db_user:
             raise HTTPException(
                 detail="User with this id doesn't exist.", status_code=HTTP_404_NOT_FOUND
             )
+        # Update the user
         db_user.username = data_dct.get('username', db_user.username)
         db_user.profile_picture = data_dct.get('profile_picture', db_user.profile_picture)
         db_user.profile_bio = data_dct.get('profile_bio', db_user.profile_bio)
         await db_session.commit()
         await db_session.refresh(db_user)
+        # Send the user to RabbitMQ queue for mongo synchronization
+        with RabbitMQConnection() as conn:
+            conn.publish_message('crud_operations', db_user.format_for_rabbit('UPDATE'))
+
         return UserReturn(**(db_user.to_dict()))
 
+    # Delete a user
     @delete(path="/{id:uuid}", status_code=200, tags=["User"])
     async def delete_user(self, id: UUID, db_session: AsyncSession) -> DeleteConfirm:
+        # Check if user exists
         db_user = await db_session.get(User, id)
         if not db_user:
             raise HTTPException(
                 detail="User with this id doesn't exist.", status_code=HTTP_404_NOT_FOUND
             )
+        # Send the message to RabbitMQ queue for mongo synchronization
         with RabbitMQConnection() as conn:
             conn.publish_message('crud_operations', db_user.format_for_rabbit('DELETE'))
         await db_session.delete(db_user)
@@ -105,8 +121,10 @@ class UserController(Controller):
 
         return DeleteConfirm(deleted=True, message=f"User with id [{id}] was deleted.")
 
+    # Login a user
     @post(path="/login", dto=PartiaUserLoginDto, tags=["User"])
     async def login(self, data: DTOData[UserLogin], db_session: AsyncSession) -> Response[User]:
+        # Check if user exists
         user_to_login = data.create_instance().model_dump()
         result = await db_session.execute(
             select(User).where(User.username == user_to_login['username'])
@@ -117,19 +135,24 @@ class UserController(Controller):
             raise HTTPException(
                 detail="Username or password is not correct.", status_code=HTTP_404_NOT_FOUND
             )
+        # Check if password is correct
         if not db_user.verify_password(user_to_login['password']):
-            raise HTTPException(detail="Username or password is not correct.", status_code=HTTP_404_NOT_FOUND)
-
+            raise HTTPException(
+                detail="Username or password is not correct.", status_code=HTTP_404_NOT_FOUND
+            )
+        # Send a jwt token as a response
         response = jwt_auth.login(
             identifier=str(db_user.id),
             send_token_as_response_body=True,
         )
         return response
 
+    # Follow a user
     @post(path="/follow/{id:uuid}", tags=["User"])
     async def follow_user(
         self, request: Request[User, Token, Any], id: UUID, follow: bool, db_session: AsyncSession
     ) -> dict:
+        # Check if user exists
         user_to_follow = await db_session.get(User, id)
         if not user_to_follow:
             raise HTTPException(
@@ -138,7 +161,7 @@ class UserController(Controller):
 
         if user_to_follow.id == request.auth.sub:
             raise HTTPException(detail="You cannot follow yourself.", status_code=HTTP_409_CONFLICT)
-
+        # Check if user is already following the user
         check_if_following = await db_session.execute(
             select(user_followers_association)
             .filter(user_followers_association.c.follower_id == request.auth.sub)
@@ -149,7 +172,7 @@ class UserController(Controller):
                 raise HTTPException(
                     detail="You are already following this user.", status_code=HTTP_409_CONFLICT
                 )
-
+            # Follow the user
             insert_statement = user_followers_association.insert().values(
                 {'follower_id': request.auth.sub, 'followed_id': user_to_follow.id}
             )
@@ -160,6 +183,7 @@ class UserController(Controller):
                 raise HTTPException(
                     detail="You are not following the user.", status_code=HTTP_409_CONFLICT
                 )
+            # Unfollow the user
             delete_statement = user_followers_association.delete().where(
                 and_(
                     user_followers_association.c.follower_id == request.auth.sub,
@@ -176,6 +200,7 @@ class UserController(Controller):
                 'method': 'ADD' if follow else 'REMOVE',
             }
         )
+        # Publish the message to RabbitMQ queue for mongo synchronization
         with RabbitMQConnection() as conn:
             conn.publish_message('follow_user', data_for_rabbit)
 

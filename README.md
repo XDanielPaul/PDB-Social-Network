@@ -14,19 +14,58 @@ Authors:
 ```
 .
 ├── app/
-│   ├── controllers/ (contains the controllers for the command and query side)
-│   │   ├── command_controller.py
-│   │   └── query_controller.py
-│   ├── message_broker/ (contains the event handler for the message broker)
-│   │   └── event_handler.py
-│   ├── models/ (contains the models for the command and query side)
-│   │   ├── controller_model.py
-│   │   └── query_model.py
-│   └── utils/ (contains the utils for the command, query and message broker)
-│       ├── controller.py
-│       ├── pika.py
-│       └── query.py
-└── tests (contains tests)
+│   ├── controllers/ (contains controllers for API endpoints)
+│   │   ├── command/ (contains controllers for POST, PUT, DELETE requests)
+│   │   │   ├── __init__.py
+│   │   │   ├── CommentController.py
+│   │   │   ├── EventController.py
+│   │   │   ├── PostController.py
+│   │   │   └── UserController.py
+│   │   ├── query/ (contains controllers for GET requests)
+│   │   │   ├── __init__.py
+│   │   │   ├── CommentController.py
+│   │   │   ├── EventController.py
+│   │   │   ├── PostController.py
+│   │   │   └── UserController.py
+│   │   ├── __init__.py
+│   │   ├── command_controller.py (contains all command controllers)
+│   │   └── query_controller.py (contains all query controllers)
+│   ├── message_broker/
+│   │   └── event_handler.py (contains event handler for RabbitMQ -> Synchronization of Source of Truth [PostgreSQL] and Materialized View [MongoDB])
+│   ├── models/ (contains SQLAlchemy models and seeding functions)
+│   │   ├── example_data/
+│   │   │   └── users.json
+│   │   ├── __init__.py
+│   │   ├── base_for_modelling.py
+│   │   ├── comment_model.py
+│   │   ├── event_model.py
+│   │   ├── like_dislike_model.py
+│   │   ├── populize_functions.py
+│   │   ├── post_model.py
+│   │   ├── tag_model.py
+│   │   └── user_model.py
+│   └── utils/ (contains utilities for API)
+│       ├── mongo/
+│       │   ├── collections.py (contains Collection class for MongoDB)
+│       │   ├── custom_methods.py (contains custom handlers for RabbitMQ messages)
+│       │   └── mongo_connect.py
+│       ├── pika.py (contains RabbitMQ connection and queues)
+│       └── query.py (contains expand methods for MongoDB)
+├── tests/ (contains tests for API)
+│   ├── conftest.py
+│   ├── test_comments.py
+│   ├── test_events.py
+│   ├── test_posts.py
+│   └── test_users.py
+├── .pre-commit-config.yaml (contains pre-commit hooks)
+├── CHANGELOG.md
+├── docker-compose.yml (contains docker-compose configuration)
+├── LICENSE
+├── poetry.lock (contains poetry dependencies)
+├── populize.py (script for generating dummy data in database)
+├── Procfile.dev (contains Procfile for overmind process manager)
+├── pyproject.toml (contains poetry configuration)
+└── README.md (this file)
 ```
 
 # Prerequisites
@@ -59,13 +98,16 @@ Option 2:
     -   `poetry run python app/message_broker/event_handler.py`
 -   For generating database data use:
     -   `poetry run python .\populize.py`
+
 # Pre-commit hooks
 
 Before you commit, you need to run pre-commit to ensure that your code is formatted correctly and that you have no linting errors. To do this, run `pre-commit` in the root directory of the project. If you have any errors, you will need to fix them before you can commit.
 
-# Testing
+# Testing with pytest
 
 For testing you have to have dependencies installed and docker containers running.
+Secondly you need to clear your MongoDB database and run `poetry run python populize.py` to populate your database with dummy data.
+Lastly you need to run the application (see **Run the application** section).
 
 You can run tests in 2 ways:
 

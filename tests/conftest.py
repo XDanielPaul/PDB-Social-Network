@@ -42,17 +42,6 @@ def setup_teardown():
 
     post_id = r.json()['id']
 
-    # Create a test tag
-    r = requests.post(
-        'http://localhost:8000/tag',
-        headers=headers,
-        json={
-            "name": "test",
-        },
-    )
-
-    tag_id = r.json()['id']
-
     # Create a test comment
     r = requests.post(
         'http://localhost:8000/comments',
@@ -93,12 +82,6 @@ def setup_teardown():
     # Delete the test comment
     requests.delete(
         f'http://localhost:8000/comments/{comment_id}',
-        headers=headers,
-    )
-
-    # Delete the test tag
-    r = requests.delete(
-        f'http://localhost:8000/tag/{tag_id}',
         headers=headers,
     )
 
@@ -173,16 +156,6 @@ def comment_id(headers):
     )
     comments = [comment if comment['content'] == 'test' else None for comment in r.json()]
     return [comment for comment in comments if comment is not None][0]['_id']
-
-
-@pytest.fixture
-def tag_id(headers):
-    r = requests.get(
-        'http://localhost:8001/tags',
-        headers=headers,
-    )
-    tags = [tag if tag['name'] == 'Test' else None for tag in r.json()]
-    return [tag for tag in tags if tag is not None][0]['_id']
 
 
 # Make fake user attend event

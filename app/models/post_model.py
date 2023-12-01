@@ -17,6 +17,7 @@ posts_shared_association = Table(
 )
 
 
+# Post model for command
 class Post(UUIDAuditBase):
     __tablename__ = 'posts'
     title: Mapped[str] = mapped_column(String(1024))
@@ -60,7 +61,7 @@ class Post(UUIDAuditBase):
             case 'DELETE':
                 message['data'] = self.to_dict_delete()
 
-        return json.dumps(message,default=str)
+        return json.dumps(message, default=str)
 
 
 class TagInPost(BaseModel):

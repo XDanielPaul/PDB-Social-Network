@@ -1,4 +1,5 @@
 from uuid import UUID
+
 from litestar.contrib.pydantic import PydanticDTO
 from litestar.contrib.sqlalchemy.base import UUIDBase
 from litestar.dto import DTOConfig
@@ -14,6 +15,7 @@ tags_posts_associations = Table(
 )
 
 
+# Tag model for command
 class Tag(UUIDBase):
     __tablename__ = 'tags'
     name: Mapped[str]
@@ -34,7 +36,6 @@ class Tag(UUIDBase):
         match method:
             case 'ADD':
                 return self.to_dict_create()
-            
 
 
 class TagPost(BaseModel):

@@ -11,14 +11,17 @@ from app.utils.mongo.collections import *
 from app.utils.query import expand_ids_to_objects_post
 
 
+# Post controller for read operations
 class PostController(Controller):
     path = '/posts'
 
+    # Get all posts
     @get(path='/', tags=['Posts'])
     async def get_posts(self) -> list[dict]:
         posts = post_collection.find_documents({})
         return expand_ids_to_objects_post(posts)
 
+    # Get post by id
     @get(path='/{id:uuid}', tags=['Posts'])
     async def get_post(self, id: UUID) -> dict:
         post = post_collection.find_document({'_id': str(id)})
@@ -42,7 +45,7 @@ class PostController(Controller):
         posts = post_collection.find_documents({})
         # Get the number of likes and dislikes for each post
         ratings = like_dislike_collection.find_documents({})
-        # Sort posts by likes and dislikes count
+        # Sort posts by created_at, likes and dislikes count
         rated_posts = sorted(
             posts,
             key=lambda post: (
@@ -53,11 +56,13 @@ class PostController(Controller):
         )
         return expand_ids_to_objects_post(rated_posts)
 
+    # Get posts by user id
     @get(path="/my_posts", tags=["Posts"])
     async def get_my_posts(self, request: Request[dict, Token, Any]) -> dict:
         posts = post_collection.find_documents({"created_by_id": request.auth.sub})
         return expand_ids_to_objects_post(posts)
 
+    # Get posts by criteria defined in documentation
     @get(path="/my_feed", tags=["Posts"])
     async def get_my_feed(self, request: Request[dict, Token, Any]) -> dict:
         follower_ids = user_collection.find_documents({"followers": request.auth.sub})
@@ -65,7 +70,7 @@ class PostController(Controller):
             {"created_by_id": {"$in": follower_ids}}
         )
         ratings = like_dislike_collection.find_documents({})
-        # Filter by likes and dislikes
+        # Filter by created_at likes and dislikes
         rated_posts = sorted(
             posts_posted_by_followers,
             key=lambda post: (

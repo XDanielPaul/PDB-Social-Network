@@ -8,6 +8,7 @@ from sqlalchemy import Column, ForeignKey
 from sqlalchemy.orm import Mapped, relationship
 
 
+# Comment model for command
 class Comment(UUIDAuditBase):
     __tablename__ = 'comments'
     content: Mapped[str]
@@ -49,7 +50,7 @@ class Comment(UUIDAuditBase):
                 message['data'] = self.to_dict_update()
             case 'DELETE':
                 message['data'] = self.to_dict_delete()
-        return json.dumps(message,default=str)
+        return json.dumps(message, default=str)
 
 
 class CommentCreate(BaseModel):

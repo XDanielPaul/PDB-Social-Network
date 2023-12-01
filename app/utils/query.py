@@ -1,6 +1,7 @@
 from app.utils.mongo.collections import *
 
 
+# Expand ids of user attributes to objects -> Level 1 expansion
 def expand_ids_to_objects_user(users: list[dict]) -> list[dict]:
     for user in users:
         user['followers'] = user_collection.find_documents({'_id': {'$in': user['followers']}})
@@ -13,6 +14,7 @@ def expand_ids_to_objects_user(users: list[dict]) -> list[dict]:
     return users
 
 
+# Expand ids of post attributes to objects -> Level 1 expansion
 def expand_ids_to_objects_post(posts: list[dict]) -> list[dict]:
     for post in posts:
         post['comments'] = comment_collection.find_documents({'on_post_id': post['_id']})
@@ -24,6 +26,7 @@ def expand_ids_to_objects_post(posts: list[dict]) -> list[dict]:
     return posts
 
 
+# Expand ids of comment attributes to objects -> Level 1 expansion
 def expand_ids_to_objects_event(events: list[dict]) -> list[dict]:
     for event in events:
         if event.get('attending_users'):

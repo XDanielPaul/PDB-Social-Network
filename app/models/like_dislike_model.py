@@ -5,7 +5,7 @@ from sqlalchemy import Column, ForeignKey
 from sqlalchemy.orm import Mapped, relationship
 
 
-
+# LikeDislike model for command
 class LikeDislike(UUIDBase):
     __tablename__ = 'like_dislike'
     review_type: Mapped[bool]

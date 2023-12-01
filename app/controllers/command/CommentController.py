@@ -9,6 +9,7 @@ from litestar.dto import DTOData
 from litestar.exceptions import HTTPException
 from litestar.status_codes import HTTP_404_NOT_FOUND
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.models.base_for_modelling import DeleteConfirm
 from app.models.comment_model import (
     Comment,
@@ -22,9 +23,11 @@ from app.models.user_model import User
 from app.utils.pika import RabbitMQConnection
 
 
+# Comment controller for CUD operations
 class CommentController(Controller):
     path = "/comments"
 
+    # Create a comment
     @post('/', tags=["Comments"], dto=PartialCommentDto)
     async def create_comment(
         self,
@@ -32,7 +35,9 @@ class CommentController(Controller):
         data: DTOData[CommentCreate],
         db_session: AsyncSession,
     ) -> dict:
+        # Get the data from the DTO
         data_dct = data.create_instance()
+        # Get the user from the database
         db_user = await db_session.get(User, request.auth.sub)
 
         if not db_user:
@@ -40,6 +45,7 @@ class CommentController(Controller):
                 detail="User which creates the comment does not exist.",
                 status_code=HTTP_404_NOT_FOUND,
             )
+        # Get the post from the database
         db_post = await db_session.get(Post, data_dct.on_post_id)
 
         if not db_post:
@@ -48,6 +54,7 @@ class CommentController(Controller):
                 status_code=HTTP_404_NOT_FOUND,
             )
 
+        # Create the comment
         comment = data_dct.model_dump()
         db_comment = Comment(**comment, on_post=db_post, created_comment_by=db_user)
         db_session.add(db_comment)
@@ -57,21 +64,22 @@ class CommentController(Controller):
         await db_session.commit()
         await db_session.refresh(db_comment)
 
-        # Data for rabbitMQ regarding the comment and the post relation
+        # Data for RabbitMQ regarding the comment and the post relation
         data_for_rabbit = json.dumps(
             {'post_id': str(db_post.id), 'comment_id': str(db_comment.id), 'method': 'ADD'}
         )
 
+        # Publish the message to the queue for Mongo synchronization
         with RabbitMQConnection() as conn:
             conn.publish_message('crud_operations', db_comment.format_for_rabbit('CREATE'))
             conn.publish_message('comments', data_for_rabbit)
 
         return {'Comment': db_comment.to_dict_create()}
 
+    # Update a comment
     @put(path='/', dto=PartialUpdateCommentDto, tags=["Comments"])
     async def update_comment(
         self,
-        request: Request[User, Token, Any],
         data: DTOData[UpdateComment],
         db_session: AsyncSession,
     ) -> dict:
@@ -92,10 +100,9 @@ class CommentController(Controller):
 
         return {'return': True}
 
+    # Delete a comment
     @delete(path="/{id:uuid}", status_code=200, tags=["Comments"])
-    async def delete_comment(
-        self, request: Request[User, Token, Any], id: UUID, db_session: AsyncSession
-    ) -> DeleteConfirm:
+    async def delete_comment(self, id: UUID, db_session: AsyncSession) -> DeleteConfirm:
         db_comment = await db_session.get(Comment, id)
         if not db_comment:
             raise HTTPException(
@@ -112,6 +119,7 @@ class CommentController(Controller):
             {'post_id': str(db_post.id), 'comment_id': str(db_comment.id), 'method': 'REMOVE'}
         )
 
+        # Publish the message to the queue for Mongo synchronization
         with RabbitMQConnection() as conn:
             conn.publish_message('crud_operations', db_comment.format_for_rabbit('DELETE'))
             conn.publish_message('comments', data_for_rabbit)

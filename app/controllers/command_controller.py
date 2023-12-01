@@ -14,6 +14,7 @@ from app.controllers.command.UserController import UserController, jwt_auth
 
 # PostgreSQL connection string: postgresql+asyncpg://admin:admin@localhost:5432/db_name
 # SQLite connection string: sqlite+aiosqlite:///test.sqlite
+# Setup SQLAlchemy configuration.
 session_config = AsyncSessionConfig(expire_on_commit=False)
 sqlalchemy_config = SQLAlchemyAsyncConfig(
     connection_string="postgresql+asyncpg://admin:admin@localhost:5432/db_name",
@@ -22,6 +23,7 @@ sqlalchemy_config = SQLAlchemyAsyncConfig(
 sqlalchemy_plugin = SQLAlchemyInitPlugin(config=sqlalchemy_config)
 
 
+# Setup database initialization.
 async def on_startup(app: Litestar) -> None:
     """Initializes the database."""
     async with app.state.db_engine.begin() as conn:
@@ -29,11 +31,13 @@ async def on_startup(app: Litestar) -> None:
         await conn.run_sync(UUIDBase.metadata.create_all)
 
 
+# Setup OpenAPI configuration.
 openapi_config = OpenAPIConfig(
     title="Command API",
     version="1.0.0",
 )
 
+# Setup Litestar application.
 app = Litestar(
     plugins=[SQLAlchemyInitPlugin(sqlalchemy_config)],
     on_startup=[on_startup],
