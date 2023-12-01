@@ -1,18 +1,14 @@
 import json
-from typing import Annotated, Any
+from typing import Any
 from uuid import UUID
 
 from litestar import Request, delete, post, put
 from litestar.contrib.jwt import Token
 from litestar.controller import Controller
 from litestar.dto import DTOData
-from litestar.enums import RequestEncodingType
 from litestar.exceptions import HTTPException
-from litestar.params import Body
-from litestar.status_codes import HTTP_404_NOT_FOUND, HTTP_409_CONFLICT
-from sqlalchemy import select
+from litestar.status_codes import HTTP_404_NOT_FOUND
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.models.base_for_modelling import DeleteConfirm
 from app.models.comment_model import (
     Comment,

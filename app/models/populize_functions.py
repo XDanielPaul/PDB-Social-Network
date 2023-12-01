@@ -4,15 +4,12 @@ from .event_model import Event, event_attending_associations
 from .like_dislike_model import LikeDislike
 from .post_model import Post, posts_shared_association
 from .tag_model import Tag, tags_posts_associations
-from litestar.contrib.sqlalchemy.base import UUIDBase
-from sqlalchemy import create_engine, select
-from sqlalchemy.orm import sessionmaker, selectinload
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 import json
-import sys
 import random
 from faker import Faker
 import datetime
-from datetime import timedelta
 import pytz
 
 # TODO

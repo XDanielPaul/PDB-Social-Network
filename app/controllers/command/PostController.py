@@ -1,17 +1,13 @@
 import json
-from typing import Annotated, Any
+from typing import Any
 from uuid import UUID
 
-from litestar import MediaType, Request, Response, delete, get, post, put
+from litestar import  Request, delete, post
 from litestar.contrib.jwt import Token
 from litestar.controller import Controller
-from litestar.datastructures import UploadFile
 from litestar.dto import DTOData
-from litestar.enums import RequestEncodingType
 from litestar.exceptions import HTTPException
-from litestar.params import Body
 from litestar.status_codes import (
-    HTTP_204_NO_CONTENT,
     HTTP_401_UNAUTHORIZED,
     HTTP_404_NOT_FOUND,
     HTTP_409_CONFLICT,
@@ -23,11 +19,8 @@ from sqlalchemy.orm import selectinload
 from app.models.base_for_modelling import DeleteConfirm
 from app.models.like_dislike_model import LikeDislike
 from app.models.post_model import (
-    LikeDislikeDeleteModel,
-    LikeDislikeDeleteModelDto,
     LikeDislikeModel,
     PartialPostDto,
-    PartialPostReturnDto,
     Post,
     PostCreate,
     PostLikeDislike,

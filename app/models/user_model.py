@@ -1,18 +1,17 @@
 import json
 from typing import Annotated
 from uuid import UUID
-
 from litestar.contrib.pydantic import PydanticDTO
 from litestar.contrib.sqlalchemy.base import UUIDBase
 from litestar.contrib.sqlalchemy.dto import SQLAlchemyDTO
 from litestar.dto import DTOConfig
-from sqlalchemy import Column, ForeignKey, Table, String
-from sqlalchemy.orm import Mapped, relationship,mapped_column
-
+from sqlalchemy import Column, ForeignKey, Table
+from sqlalchemy.orm import Mapped, relationship
 from .base_for_modelling import BaseModel
 from .event_model import event_attending_associations
 from .post_model import posts_shared_association
 from werkzeug.security import generate_password_hash, check_password_hash
+
 user_followers_association = Table(
     'user_followers',
     UUIDBase.metadata,

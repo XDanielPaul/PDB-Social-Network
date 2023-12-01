@@ -1,5 +1,3 @@
-from typing import Any
-
 from litestar import Litestar
 from litestar.contrib.sqlalchemy.base import UUIDBase
 from litestar.contrib.sqlalchemy.plugins.init import SQLAlchemyInitPlugin
@@ -12,7 +10,6 @@ from litestar.openapi.config import OpenAPIConfig
 from app.controllers.command.CommentController import CommentController
 from app.controllers.command.EventController import EventController
 from app.controllers.command.PostController import PostController
-from app.controllers.command.TagController import TagController
 from app.controllers.command.UserController import UserController, jwt_auth
 
 # PostgreSQL connection string: postgresql+asyncpg://admin:admin@localhost:5432/db_name
@@ -43,7 +40,6 @@ app = Litestar(
     on_app_init=[jwt_auth.on_app_init],
     route_handlers=[
         UserController,
-        TagController,
         PostController,
         CommentController,
         EventController,

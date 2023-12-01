@@ -1,10 +1,7 @@
-from typing import Annotated
 from litestar.contrib.sqlalchemy.base import UUIDBase,UUIDAuditBase
-from litestar.contrib.sqlalchemy.dto import SQLAlchemyDTO
 from litestar.dto import DTOConfig
-from litestar.contrib.sqlalchemy.repository import SQLAlchemyAsyncRepository
 from sqlalchemy import Column, ForeignKey, Table
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, relationship
 from litestar.contrib.pydantic import PydanticDTO
 from pydantic import BaseModel
 from datetime import datetime

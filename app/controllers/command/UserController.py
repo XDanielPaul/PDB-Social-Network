@@ -2,7 +2,7 @@ import json
 from typing import Any, Optional
 from uuid import UUID
 
-from litestar import Request, Response, delete, get, post, put
+from litestar import Request, Response, delete, post, put
 from litestar.connection import ASGIConnection
 from litestar.contrib.jwt import JWTAuth, Token
 from litestar.controller import Controller
@@ -49,20 +49,6 @@ jwt_auth = JWTAuth[User](
 class UserController(Controller):
     path = "/users"
 
-    @get(path="/", tags=["User"])
-    async def get_users(self, db_session: AsyncSession) -> list[UserReturn]:
-        request = await db_session.execute(select(User))
-        return [UserReturn(**(user.to_dict())) for user in request.scalars().all()]
-
-    @get(path="/{id:uuid}", tags=["User"])
-    async def get_user(self, id: UUID, db_session: AsyncSession) -> UserReturn:
-        user = await db_session.get(User, id)
-
-        if not user:
-            raise HTTPException(
-                detail="User with this id does not exist", status_code=HTTP_404_NOT_FOUND
-            )
-        return UserReturn(**(user.to_dict()))
 
     @post(path="/register", dto=PartialUserDto, tags=["User"])
     async def create_user(

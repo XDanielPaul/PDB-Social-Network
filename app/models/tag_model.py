@@ -1,14 +1,10 @@
-from typing import Annotated
 from uuid import UUID
-
 from litestar.contrib.pydantic import PydanticDTO
 from litestar.contrib.sqlalchemy.base import UUIDBase
-from litestar.contrib.sqlalchemy.dto import SQLAlchemyDTO
-from litestar.contrib.sqlalchemy.repository import SQLAlchemyAsyncRepository
-from litestar.dto import DTOConfig, DTOData
+from litestar.dto import DTOConfig
 from pydantic import BaseModel
 from sqlalchemy import Column, ForeignKey, Table
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, relationship
 
 tags_posts_associations = Table(
     'tagged_posts',

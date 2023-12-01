@@ -7,8 +7,6 @@ from pydantic import UUID4, BaseModel
 from sqlalchemy import Column, ForeignKey
 from sqlalchemy.orm import Mapped, relationship
 
-from .post_model import posts_shared_association
-
 
 class Comment(UUIDAuditBase):
     __tablename__ = 'comments'
